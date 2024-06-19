@@ -1,66 +1,91 @@
-// HelloQuad.js (c) 2012 matsuda
-// Vertex shader program
-var VSHADER_SOURCE =
-  "attribute vec4 a_Position;\n" +
-  "void main() {\n" +
-  "  gl_Position = a_Position;\n" +
-  "}\n";
+/**
+ * Vertex shader program
+ * @constant
+ * @type {string}
+ */
+const VSHADER_SOURCE = `
+  attribute vec4 a_Position;
+  void main() {
+    gl_Position = a_Position;
+    gl_PointSize = 10.0;
+  }
+`;
 
-// Fragment shader program
-var FSHADER_SOURCE =
-  "void main() {\n" + "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" + "}\n";
+/**
+ * Fragment shader program
+ * @constant
+ * @type {string}
+ */
+const FSHADER_SOURCE = `
+  void main() {
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+  }
+`;
 
+/**
+ * Main function to initialize WebGL context and shaders, and to draw the rectangle.
+ */
 function main() {
-  // Retrieve <canvas> element
-  var canvas = document.getElementById("webgl");
+  /** @type {HTMLCanvasElement} */
+  const canvas = document.getElementById("webgl");
 
-  // Get the rendering context for WebGL
-  var gl = getWebGLContext(canvas);
+  /** @type {WebGLRenderingContext} */
+  const gl = getWebGLContext(canvas);
   if (!gl) {
-    console.log("Failed to get the rendering context for WebGL");
+    console.error("Failed to get the rendering context for WebGL");
     return;
   }
 
-  // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-    console.log("Failed to intialize shaders.");
+    console.error("Failed to initialize shaders.");
     return;
   }
 
-  // Write the positions of vertices to a vertex shader
-  var n = initVertexBuffers(gl);
+  const n = initVertexBuffers(gl);
   if (n < 0) {
-    console.log("Failed to set the positions of the vertices");
+    console.error("Failed to set the positions of the vertices");
     return;
   }
 
-  // Specify the color for clearing <canvas>
   gl.clearColor(0, 0, 0, 1);
-
-  // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // TODO: Draw the rectangle
+  // Draw the rectangle
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
 }
 
+/**
+ * Initializes the vertex buffer.
+ * 
+ * @param {WebGLRenderingContext} gl - The WebGL rendering context.
+ * @returns {number} The number of vertices.
+ */
 function initVertexBuffers(gl) {
-  var vertices = new Float32Array([-0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5]);
-  var n = 4; // The number of vertices
+  const vertices = new Float32Array([
+    -0.5,  0.5, 
+    -0.5, -0.5, 
+     0.5,  0.5, 
+     0.5, -0.5
+  ]);
+  const n = 4; // The number of vertices
 
-  // TODO: Create a buffer object
-
-  // TODO: Bind the buffer object to target
-
-  // TODO: Write date into the buffer object
-
-  var a_Position = gl.getAttribLocation(gl.program, "a_Position");
-  if (a_Position < 0) {
-    console.log("Failed to get the storage location of a_Position");
+  const vertexBuffer = gl.createBuffer();
+  if (!vertexBuffer) {
+    console.error("Failed to create buffer object");
     return -1;
   }
-  // TODO: Assign the buffer object to a_Position variable
 
-  // TODO: Enable the assignment to a_Position variable
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+  const a_Position = gl.getAttribLocation(gl.program, "a_Position");
+  if (a_Position < 0) {
+    console.error("Failed to get the storage location of a_Position");
+    return -1;
+  }
+
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_Position);
 
   return n;
 }

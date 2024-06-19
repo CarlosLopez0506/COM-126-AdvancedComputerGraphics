@@ -54,24 +54,33 @@ function main() {
   // TODO: Draw the rectangle
 }
 
+/**
+ * Initializes the vertex buffer.
+ * 
+ * @param {WebGLRenderingContext} gl - The WebGL rendering context.
+ * @returns {number} The number of vertices.
+ */
 function initVertexBuffers(gl) {
   var vertices = new Float32Array([0, 0.5, -0.5, -0.5, 0.5, -0.5]);
   var n = 3; // The number of vertices
 
-  // TODO: Create a buffer object
-
-  // TODO: Bind the buffer object to target
-
-  // TODO: Write date into the buffer object
-
-  var a_Position = gl.getAttribLocation(gl.program, "a_Position");
-  if (a_Position < 0) {
-    console.log("Failed to get the storage location of a_Position");
+  const vertexBuffer = gl.createBuffer();
+  if (!vertexBuffer) {
+    console.error("Failed to create buffer object");
     return -1;
   }
-  // TODO: Assign the buffer object to a_Position variable
 
-  // TODO: Enable the assignment to a_Position variable
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+  const a_Position = gl.getAttribLocation(gl.program, "a_Position");
+  if (a_Position < 0) {
+    console.error("Failed to get the storage location of a_Position");
+    return -1;
+  }
+
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_Position);
 
   return n;
 }
