@@ -36,10 +36,12 @@ function main() {
   }
 
   // TODO: Create Matrix4 object for the rotation matrix
+  var xformMatrix = new Matrix4();
 
   // Set the rotation matrix
-  var ANGLE = 90.0; // The rotation angle
+  var ANGLE = 80.0; // The rotation angle
   // TODO: Set angle in rotation matrix
+  xformMatrix.setRotate(ANGLE, 0, 1, 0);
 
   // Pass the rotation matrix to the vertex shader
   var u_xformMatrix = gl.getUniformLocation(gl.program, "u_xformMatrix");
@@ -48,7 +50,7 @@ function main() {
     return;
   }
   // TODO: adjust the passing of elements with the new object
-  gl.uniformMatrix4fv(u_xformMatrix, false, xformMatrix);
+  gl.uniformMatrix4fv(u_xformMatrix, false, xformMatrix.elements);
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0, 0, 0, 1);

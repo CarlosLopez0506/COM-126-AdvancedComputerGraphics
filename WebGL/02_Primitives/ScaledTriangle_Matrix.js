@@ -3,8 +3,9 @@
 // TODO: Prepare the transformation matrix
 var VSHADER_SOURCE =
   "attribute vec4 a_Position;\n" +
+  'uniform mat4 u_xformMatrix;\n' +
   "void main() {\n" +
-  "  gl_Position = a_Position;\n" +
+  ' gl_Position = u_xformMatrix * a_Position;\n' +
   "}\n";
 
 // Fragment shader program
@@ -41,9 +42,17 @@ function main() {
   }
 
   // TODO: Prepare the transformation matrix
-  // Note: WebGL is column major order
+  var xformMatrix = new Float32Array([Sx, 0, 0, 0, 0, Sy, 0, 0, 0, 0, Sz, 0, 0, 0, 0, 1]);
+
+
 
   // TODO: Pass the rotation matrix to the vertex shader
+  var u_xformMatrix = gl.getUniformLocation(gl.program, "u_xformMatrix");
+  if (!u_xformMatrix) {
+    console.log("Failed to get the storage location of u_xformMatrix");
+  }
+  gl.uniformMatrix4fv(u_xformMatrix, false, xformMatrix);
+
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0, 0, 0, 1);
@@ -52,6 +61,7 @@ function main() {
   gl.clear(gl.COLOR_BUFFER_BIT);
 
   // TODO: Draw the rectangle
+  gl.drawArrays(gl.TRIANGLES, 0, n);
 }
 
 /**

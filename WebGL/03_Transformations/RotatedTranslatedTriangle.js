@@ -36,12 +36,17 @@ function main() {
   }
 
   // TODO: Create Matrix4 object for model transformation
+  var modelMatrix = new Matrix4();
 
   // Calculate a model matrix
   var ANGLE = 60.0; // The rotation angle
   var Tx = 0.5; // Translation distance
   // TODO: Set angle in transform matrix
-  // TODO: Set translation in transform matrix
+
+
+  modelMatrix.setRotate(ANGLE, 0, 0, 1);
+  modelMatrix.setTranslate(Tx, 0, 0); 
+
 
   // Pass the model matrix to the vertex shader
   var u_ModelMatrix = gl.getUniformLocation(gl.program, "u_ModelMatrix");
@@ -50,7 +55,7 @@ function main() {
     return;
   }
   // TODO: adjust the passing of elements with the new object
-  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix);
+  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0, 0, 0, 1);
