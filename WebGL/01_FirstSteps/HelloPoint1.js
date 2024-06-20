@@ -1,19 +1,55 @@
-// HelloPoint1.js (c) 2012 matsuda
-// TODO: Vertex shader program
+// HelloPoint1.js
 
-// TODO: Fragment shader program
+/**
+ * Vertex shader program source code.
+ * Sets the position and size of a point.
+ * @type {string}
+ */
+const VSHADER_SOURCE = `
+  void main() {
+    gl_Position = vec4(0.0, 0.0, 0.0, 1.0); // Coordinates
+    gl_PointSize = 10.0; // Set the point size
+  }
+`;
 
+/**
+ * Fragment shader program source code.
+ * Sets the color of a point.
+ * @type {string}
+ */
+const FSHADER_SOURCE = `
+  void main() {
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Set the color
+  }
+`;
+
+/**
+ * The main function to initialize and render the WebGL context.
+ */
 function main() {
   // Retrieve <canvas> element
-  var canvas = document.getElementById("webgl");
+  const canvas = document.getElementById('webgl');
 
-  // TODO: Get the rendering context for WebGL
+  // Get the rendering context for WebGL
+  const gl = getWebGLContext(canvas);
+  if (!gl) {
+    console.error('Failed to get the rendering context for WebGL');
+    return;
+  }
 
-  // TODO: Initialize shaders
+  // Initialize shaders
+  if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+    console.error('Failed to initialize shaders.');
+    return;
+  }
 
-  // TODO: Specify the color for clearing <canvas>
+  // Set the color for clearing <canvas>
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-  // TODO: Clear <canvas>
+  // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // TODO: Draw a point
+  // Draw a point
+  gl.drawArrays(gl.POINTS, 0, 1);
 }
+
