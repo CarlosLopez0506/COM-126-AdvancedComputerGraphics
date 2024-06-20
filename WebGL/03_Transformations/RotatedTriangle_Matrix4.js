@@ -1,21 +1,15 @@
-// ScaledTriangle_Matrix.js (c) 2012 matsuda
+// RotatedTriangle_Matrix4.js (c) 2012 matsuda
 // Vertex shader program
-// TODO: Prepare the transformation matrix
 var VSHADER_SOURCE =
   "attribute vec4 a_Position;\n" +
-  'uniform mat4 u_xformMatrix;\n' +
+  "uniform mat4 u_xformMatrix;\n" +
   "void main() {\n" +
-  ' gl_Position = u_xformMatrix * a_Position;\n' +
+  "  gl_Position = u_xformMatrix * a_Position;\n" +
   "}\n";
 
 // Fragment shader program
 var FSHADER_SOURCE =
   "void main() {\n" + "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" + "}\n";
-
-// The scaling factor
-var Sx = 1.0,
-  Sy = 1.5,
-  Sz = 1.0;
 
 function main() {
   // Retrieve <canvas> element
@@ -41,18 +35,22 @@ function main() {
     return;
   }
 
-  // TODO: Prepare the transformation matrix
-  var xformMatrix = new Float32Array([Sx, 0, 0, 0, 0, Sy, 0, 0, 0, 0, Sz, 0, 0, 0, 0, 1]);
+  // TODO: Create Matrix4 object for the rotation matrix
+  var xformMatrix = new Matrix4();
 
+  // Set the rotation matrix
+  var ANGLE = 80.0; // The rotation angle
+  // TODO: Set angle in rotation matrix
+  xformMatrix.setRotate(ANGLE, 0, 1, 0);
 
-
-  // TODO: Pass the rotation matrix to the vertex shader
+  // Pass the rotation matrix to the vertex shader
   var u_xformMatrix = gl.getUniformLocation(gl.program, "u_xformMatrix");
   if (!u_xformMatrix) {
     console.log("Failed to get the storage location of u_xformMatrix");
+    return;
   }
-  gl.uniformMatrix4fv(u_xformMatrix, false, xformMatrix);
-
+  // TODO: adjust the passing of elements with the new object
+  gl.uniformMatrix4fv(u_xformMatrix, false, xformMatrix.elements);
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0, 0, 0, 1);
@@ -60,36 +58,35 @@ function main() {
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // TODO: Draw the rectangle
+  // Draw the rectangle
   gl.drawArrays(gl.TRIANGLES, 0, n);
 }
 
-/**
- * Initializes the vertex buffer.
- * 
- * @param {WebGLRenderingContext} gl - The WebGL rendering context.
- * @returns {number} The number of vertices.
- */
 function initVertexBuffers(gl) {
   var vertices = new Float32Array([0, 0.5, -0.5, -0.5, 0.5, -0.5]);
   var n = 3; // The number of vertices
 
-  const vertexBuffer = gl.createBuffer();
+  // Create a buffer object
+  var vertexBuffer = gl.createBuffer();
   if (!vertexBuffer) {
-    console.error("Failed to create buffer object");
-    return -1;
+    console.log("Failed to create the buffer object");
+    return false;
   }
 
+  // Bind the buffer object to target
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  // Write date into the buffer object
   gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-  const a_Position = gl.getAttribLocation(gl.program, "a_Position");
+  var a_Position = gl.getAttribLocation(gl.program, "a_Position");
   if (a_Position < 0) {
-    console.error("Failed to get the storage location of a_Position");
+    console.log("Failed to get the storage location of a_Position");
     return -1;
   }
-
+  // Assign the buffer object to a_Position variable
   gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+
+  // Enable the assignment to a_Position variable
   gl.enableVertexAttribArray(a_Position);
 
   return n;
