@@ -44,8 +44,8 @@ function main() {
   // TODO: Set angle in transform matrix
 
 
-  modelMatrix.setRotate(ANGLE, 0, 0, 1);
   modelMatrix.setTranslate(Tx, 0, 0); 
+  modelMatrix.setRotate(ANGLE, 0, 0, 1);
 
 
   // Pass the model matrix to the vertex shader

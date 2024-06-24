@@ -50,13 +50,15 @@ function main() {
 
   // Current rotation angle
   var currentAngle = 0.0;
-  // TODO: Model matrix
 
-  // TODO: Start drawing
+  // Model matrix
+  var modelMatrix = new Matrix4();
+
+  // Start drawing
   var tick = function () {
-    // TODO: Update the rotation angle
-    // TODO: Draw the triangle
-    // TODO: Request that the browser calls tick
+    currentAngle = animate(currentAngle);  // Update the rotation angle
+    draw(gl, n, currentAngle, modelMatrix, u_ModelMatrix);   // Draw the triangle
+    requestAnimationFrame(tick);  // Request that the browser calls tick
   };
   tick();
 }
@@ -92,30 +94,36 @@ function initVertexBuffers(gl) {
 }
 
 function draw(gl, n, currentAngle, modelMatrix, u_ModelMatrix) {
-  // TODO: Set the transformation matrix
+  // Set the rotation matrix
+  modelMatrix.setRotate(currentAngle, 0, 0, 1);
 
-  // TODO: Pass the rotation matrix to the vertex shader
+  // Pass the rotation matrix to the vertex shader
+  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // Draw the rectangle
+  // Draw the triangle
   gl.drawArrays(gl.TRIANGLES, 0, n);
 }
 
 // Last time that this function was called
 var g_last = Date.now();
 function animate(angle) {
-  // TODO: Calculate the elapsed time
-  // TODO: Update the current rotation angle (adjusted by the elapsed time)
-  return 360;
+  // Calculate the elapsed time
+  var now = Date.now();
+  var elapsed = now - g_last;
+  g_last = now;
+  // Update the current rotation angle (adjusted by the elapsed time)
+  var newAngle = angle + (ANGLE_STEP * elapsed) / 1000.0;
+  return newAngle %= 360;
 }
 
-// TODO: connect actions to html
+// Connect actions to HTML
 function up() {
-  // TODO: change the step
+  ANGLE_STEP += 1000;  // Increase the rotation speed
 }
 
 function down() {
-  // TODO: change the step
+  ANGLE_STEP -= 1000;  // Decrease the rotation speed
 }

@@ -51,12 +51,16 @@ function main() {
   // Current rotation angle
   var currentAngle = 0.0;
   // TODO: Model matrix
+  var modelMatrix = new Matrix4();
 
   // TODO: Start drawing
   var tick = function () {
     // TODO: Update the rotation angle
+    currentAngle = animate(currentAngle);
     // TODO: Draw the triangle
+    draw(gl, n, currentAngle, modelMatrix, u_ModelMatrix);
     // TODO: Request that the browser calls tick
+    requestAnimationFrame(tick);
   };
   tick();
 }
@@ -93,8 +97,10 @@ function initVertexBuffers(gl) {
 
 function draw(gl, n, currentAngle, modelMatrix, u_ModelMatrix) {
   // TODO: Set the rotation matrix
+  modelMatrix.setRotate(currentAngle, 1, 0, 0);
 
   // TODO: Pass the rotation matrix to the vertex shader
+  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -106,8 +112,13 @@ function draw(gl, n, currentAngle, modelMatrix, u_ModelMatrix) {
 // Last time that this function was called
 var g_last = Date.now();
 function animate(angle) {
-  // TODO: Calculate the elapsed time
+  // Calculate the elapsed time
+  var now = Date.now();
+  var elapsed = now - g_last;
+  g_last = now;
 
   // TODO: Update the current rotation angle (adjusted by the elapsed time)
-  return 360;
+  var newAngle = angle + ANGLE_STEP * elapsed / 1000.0;
+
+  return newAngle %= 360;
 }
