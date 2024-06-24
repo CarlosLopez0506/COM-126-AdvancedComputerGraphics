@@ -1,18 +1,35 @@
-// ColoredTriangle.js (c) 2012 matsuda
-// Vertex shader program
-// TODO: Add information for color in vertex shader
+/**
+ * MultiAttributeColor.js (c) 2012 matsuda
+ * Vertex shader program
+ * @todo Add information for color in vertex shader
+ */
 var VSHADER_SOURCE =
   "attribute vec4 a_Position;\n" +
+  "attribute vec4 a_Color;\n" +
+  "varying vec4 v_Color;\n" +
   "void main() {\n" +
   "  gl_Position = a_Position;\n" +
+  "  gl_PointSize = 10.0;\n" +
+  "  v_Color = a_Color;\n" +
   "}\n";
 
-// Fragment shader program
-// TODO: Example of pre-processord directive
-// TODO: Pass color information
+/**
+ * Fragment shader program
+ * @todo Example of pre-processor directive
+ * @todo Pass color information
+ */
 var FSHADER_SOURCE =
-  "void main() {\n" + "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" + "}\n";
+  "#ifdef GL_ES\n" +
+  "precision mediump float;\n" +
+  "#endif\n" +
+  "varying vec4 v_Color;\n" +
+  "void main() {\n" +
+  "  gl_FragColor = v_Color;\n" +
+  "}\n";
 
+/**
+ * Main function
+ */
 function main() {
   // Retrieve <canvas> element
   var canvas = document.getElementById("webgl");
@@ -26,11 +43,11 @@ function main() {
 
   // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-    console.log("Failed to intialize shaders.");
+    console.log("Failed to initialize shaders.");
     return;
   }
 
-  //
+  // Initialize vertex buffers
   var n = initVertexBuffers(gl);
   if (n < 0) {
     console.log("Failed to set the vertex information");
@@ -43,36 +60,52 @@ function main() {
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // Draw the rectangle
+  // Draw three points
   gl.drawArrays(gl.TRIANGLES, 0, n);
 }
 
+/**
+ * Initialize vertex buffers
+ * @param {WebGLRenderingContext} gl - The WebGL rendering context.
+ * @returns {number} The number of vertices.
+ */
 function initVertexBuffers(gl) {
-  // TODO: Define vertex colors
-  var n = 3;
+  // Define vertex colors
+  var verticesColors = new Float32Array([
+    0.0, 0.5, 1.0, 0.0, 0.0, // The first point
+    -0.5, -0.5, 0.0, 1.0, 0.0, // The second point
+    0.5, -0.5, 0.0, 0.0, 1.0, // The third point
+  ]);
+  var n = 3; // The number of vertices
 
-  // TODO: Create a buffer object
+  // Create a buffer object
+  var vertexColorBuffer = gl.createBuffer();
 
-  // TODO: Bind the buffer object to target
+  // Bind the buffer object to target
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, verticesColors, gl.STATIC_DRAW);
+
   // Write the vertex coordinates and colors to the buffer object
-
-  // TODO: Define size of vertex colors from data
-
-  //Get the storage location of a_Position, assign and enable buffer
-  var a_Position = gl.getAttribLocation(gl.program, "a_Position");
+  var FSIZE = verticesColors.BYTES_PER_ELEMENT;
+  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
   if (a_Position < 0) {
-    console.log("Failed to get the storage location of a_Position");
+    console.log('Failed to get the storage location of a_Position');
     return -1;
   }
-  // TODO: modify call to pass also the parameter for reserving space for color info
-  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_Position); // Enable the assignment of the buffer object
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 5, 0);
+  gl.enableVertexAttribArray(a_Position);
 
-  // TODO: Get the storage location of a_Position, assign buffer and enable
+  // Define size of vertex colors from data
+  var a_Color = gl.getAttribLocation(gl.program, 'a_Color');
+  if (a_Color < 0) {
+    console.log('Failed to get the storage location of a_Color');
+    return -1;
+  }
+  gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 5, FSIZE * 2);
+  gl.enableVertexAttribArray(a_Color);
 
-  // TODO: pass information to shader
-
-  // TODO: Unbind the buffer object
+  // Unbind the buffer object
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   return n;
 }
