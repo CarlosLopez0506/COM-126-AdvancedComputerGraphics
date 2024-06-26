@@ -1,12 +1,12 @@
 // LookAtTriangles.js (c) 2012 matsuda
 // Vertex shader program
-// TODO: Prepare shader to deal with projection matrices
 var VSHADER_SOURCE =
   "attribute vec4 a_Position;\n" +
   "attribute vec4 a_Color;\n" +
+  "uniform mat4 u_ViewMatrix;\n" +
   "varying vec4 v_Color;\n" +
   "void main() {\n" +
-  "  gl_Position = a_Position;\n" +
+  "  gl_Position = u_ViewMatrix * a_Position;\n" +
   "  v_Color = a_Color;\n" +
   "}\n";
 
@@ -48,10 +48,14 @@ function main() {
   gl.clearColor(0, 0, 0, 1);
 
   // TODO: Get the storage location of u_ViewMatrix
+  var u_ViewMatrix = gl.getUniformLocation(gl.program, "u_ViewMatrix");
 
   // TODO: Set the matrix to be used for to set the camera view
+  var viewMatrix = new Matrix4();
+  viewMatrix.setLookAt(0.2, 0.25, 0.25, 0, 0, 0, 0, 1, 0);
 
   // TODO: Set the view matrix in shader
+  gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -62,7 +66,23 @@ function main() {
 
 function initVertexBuffers(gl) {
   // TODO: Prepare linearized coordinates and colors to display 3 triangles
-  var verticesColors = new Float32Array([]);
+  var verticesColors = new Float32Array([
+    // The back green triangle
+    0.0, 0.5, -0.4, 0.4, 1.0, 0.4,
+    -0.5, -0.5, -0.4, 0.4, 1.0, 0.4,
+    0.5, -0.5, -0.4, 1.0, 0.4, 0.4,
+  
+    // The middle yellow triangle
+    0.5, 0.4, -0.2, 1.0, 0.4, 0.4,
+    -0.5, 0.4, -0.2, 1.0, 1.0, 0.4,
+    0.0, -0.6, -0.2, 1.0, 1.0, 0.4,
+  
+    // The front blue triangle
+    0.0, 0.5, 0.0, 0.4, 0.4, 1.0,
+    -0.5, -0.5, 0.0, 0.4, 0.4, 1.0,
+    0.5, -0.5, 0.0, 1.0, 0.4, 0.4
+  ]);
+  
   var n = 9;
 
   // Create a buffer object
