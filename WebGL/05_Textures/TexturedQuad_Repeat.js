@@ -1,64 +1,91 @@
-// TexturedQuad_Repeat.js (c) 2012 matsuda
 // Vertex shader program
-// TODO: Prepare shader to receive texture coordinates
-var VSHADER_SOURCE =
-  "attribute vec4 a_Position;\n" +
-  "void main() {\n" +
-  "  gl_Position = a_Position;\n" +
-  "}\n";
+const VSHADER_SOURCE = `
+attribute vec4 a_Position; // Attribute variable for vertex positions
+attribute vec2 a_TexCoord; // Attribute variable for texture coordinates
+
+varying vec2 v_TexCoord; // Varying variable to pass texture coordinates to the fragment shader
+
+void main() {
+  gl_Position = a_Position; // Set the position of the vertex
+  v_TexCoord = a_TexCoord; // Pass the texture coordinates to the fragment shader
+}
+`;
 
 // Fragment shader program
-// TODO: Prepare shader to receive sampling values and texture information
-var FSHADER_SOURCE =
-  "#ifdef GL_ES\n" +
-  "precision mediump float;\n" +
-  "#endif\n" +
-  "void main() {\n" +
-  "  vec4 color0 = vec4(1.0, 0.0, 0.0, 1.0);\n" +
-  "  vec4 color1 = vec4(0.0, 1.0, 0.0, 1.0);\n" +
-  "  gl_FragColor = color0 * color1;\n" +
-  "}\n";
+const FSHADER_SOURCE = `
+#ifdef GL_ES
+precision mediump float;
+#endif
 
+// Uniform sampler for the texture
+uniform sampler2D u_Sampler;
+
+// Varying variable to hold the texture coordinates
+varying vec2 v_TexCoord;
+
+void main() {
+  // Set the fragment color to the color from the texture
+  gl_FragColor = texture2D(u_Sampler, v_TexCoord);
+}
+`;
+
+/**
+ * Main function to initialize and run WebGL rendering.
+ */
 function main() {
-  // Retrieve <canvas> element
   var canvas = document.getElementById("webgl");
-
-  // Get the rendering context for WebGL
   var gl = getWebGLContext(canvas);
   if (!gl) {
     console.log("Failed to get the rendering context for WebGL");
     return;
   }
 
-  // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-    console.log("Failed to intialize shaders.");
+    console.log("Failed to initialize shaders.");
     return;
   }
 
-  // Set the vertex information
   var n = initVertexBuffers(gl);
   if (n < 0) {
     console.log("Failed to set the vertex information");
     return;
   }
 
-  // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-  // TODO: Initialize textures
+  if (!initTextures(gl, n)) {
+    console.log("Failed to initialize textures");
+    return;
+  }
 }
 
+/**
+ * Initializes the vertex buffers.
+ * @param {WebGLRenderingContext} gl The WebGL rendering context.
+ * @returns {number} The number of vertices.
+ */
 function initVertexBuffers(gl) {
-  // TODO: Setup vertex and texture coordinates
+  var verticesTexCoords = new Float32Array([
+    // Vertex coordinates and texture coordinates
+    -0.5, 0.5, 0.0, 2.0,   // Top-left corner
+    -0.5, -0.5, 0.0, 0.0,  // Bottom-left corner
+    0.5, 0.5, 2.0, 2.0,    // Top-right corner
+    0.5, -0.5, 2.0, 0.0    // Bottom-right corner
+  ]);
 
-  var n = 4; // The number of vertices
+  var n = 4;
 
-  // TODO: Create a buffer object
+  var vertexTexCoordBuffer = gl.createBuffer();
+  if (!vertexTexCoordBuffer) {
+    console.log("Failed to create the buffer object");
+    return -1;
+  }
 
-  // TODO: Write the positions of vertices to a vertex shader
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexTexCoordBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, verticesTexCoords, gl.STATIC_DRAW);
 
   var FSIZE = verticesTexCoords.BYTES_PER_ELEMENT;
+
   var a_Position = gl.getAttribLocation(gl.program, "a_Position");
   if (a_Position < 0) {
     console.log("Failed to get the storage location of a_Position");
@@ -67,31 +94,72 @@ function initVertexBuffers(gl) {
   gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
   gl.enableVertexAttribArray(a_Position);
 
-  // TODO: Get the storage location of a_TexCoord
-
-  // TODO: Pass information for textures
-
-  // TODO: Enable the generic vertex attribute array
-
-  // TODO: Unbind the buffer object
+  var a_TexCoord = gl.getAttribLocation(gl.program, "a_TexCoord");
+  if (a_TexCoord < 0) {
+    console.log("Failed to get the storage location of a_TexCoord");
+    return -1;
+  }
+  gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+  gl.enableVertexAttribArray(a_TexCoord);
 
   return n;
 }
 
+/**
+ * Initializes the texture.
+ * @param {WebGLRenderingContext} gl The WebGL rendering context.
+ * @param {number} n The number of vertices.
+ * @returns {boolean} Whether the texture was successfully initialized.
+ */
 function initTextures(gl, n) {
-  // TODO: Create a texture object
+  var texture = gl.createTexture();
+  if (!texture) {
+    console.log("Failed to create the texture object");
+    return false;
+  }
 
-  // TODO: Get the storage location of u_Sampler0 and u_Sampler1
+  var u_Sampler = gl.getUniformLocation(gl.program, "u_Sampler");
+  if (!u_Sampler) {
+    console.log("Failed to get the storage location of u_Sampler");
+    return false;
+  }
 
-  // TODO: Create the image object
+  var image = new Image();
+  if (!image) {
+    console.log("Failed to create the image object");
+    return false;
+  }
 
-  // TODO: Register the event handler to be called when image loading is completed
+  image.onload = function () {
+    loadTexture(gl, n, texture, u_Sampler, image);
+  };
 
-  // TODO: Tell the browser to load an Image
+  image.src = "../resources/sky.jpg";
 
   return true;
 }
 
+/**
+ * Loads the texture image.
+ * @param {WebGLRenderingContext} gl The WebGL rendering context.
+ * @param {number} n The number of vertices.
+ * @param {WebGLTexture} texture The texture object.
+ * @param {WebGLUniformLocation} u_Sampler The sampler location.
+ * @param {HTMLImageElement} image The image object.
+ */
 function loadTexture(gl, n, texture, u_Sampler, image) {
-  // TODO: Create function to load texture from files
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+  gl.uniform1i(u_Sampler, 0);
+
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
 }

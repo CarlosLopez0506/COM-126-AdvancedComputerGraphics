@@ -1,109 +1,108 @@
-// LookAtTriangles.js (c) 2012 matsuda
-// Vertex shader program
-var VSHADER_SOURCE =
-  "attribute vec4 a_Position;\n" +
-  "attribute vec4 a_Color;\n" +
-  "uniform mat4 u_ViewMatrix;\n" +
-  "uniform mat4 u_ModelMatrix;\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_Position = u_ViewMatrix * u_ModelMatrix * a_Position;\n" +
-  "  v_Color = a_Color;\n" +
-  "}\n";
+/**
+ * Vertex shader program
+ * @constant {string}
+ */
+const VSHADER_SOURCE = `
+  attribute vec4 a_Position;
+  attribute vec4 a_Color;
+  uniform mat4 u_ViewMatrix;
+  uniform mat4 u_ModelMatrix;
+  varying vec4 v_Color;
+  void main() {
+    gl_Position = u_ViewMatrix * u_ModelMatrix * a_Position;
+    v_Color = a_Color;
+  }
+`;
 
-// Fragment shader program
-var FSHADER_SOURCE =
-  "#ifdef GL_ES\n" +
-  "precision mediump float;\n" +
-  "#endif\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_FragColor = v_Color;\n" +
-  "}\n";
+/**
+ * Fragment shader program
+ * @constant {string}
+ */
+const FSHADER_SOURCE = `
+  #ifdef GL_ES
+  precision mediump float;
+  #endif
+  varying vec4 v_Color;
+  void main() {
+    gl_FragColor = v_Color;
+  }
+`;
 
+/**
+ * The main function to setup WebGL and draw the scene.
+ */
 function main() {
-  // Retrieve <canvas> element
-  var canvas = document.getElementById("webgl");
-
-  // Get the rendering context for WebGL
-  var gl = getWebGLContext(canvas);
+  const canvas = document.getElementById("webgl");
+  const gl = getWebGLContext(canvas);
   if (!gl) {
     console.log("Failed to get the rendering context for WebGL");
     return;
   }
 
-  // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-    console.log("Failed to intialize shaders.");
+    console.log("Failed to initialize shaders.");
     return;
   }
 
-  // Set the vertex coordinates and color (the blue triangle is in the front)
-  var n = initVertexBuffers(gl);
+  const n = initVertexBuffers(gl);
   if (n < 0) {
     console.log("Failed to set the vertex information");
     return;
   }
 
-  // Specify the color for clearing <canvas>
   gl.clearColor(0, 0, 0, 1);
 
-  // TODO: Get the storage location of u_ViewMatrix
-  var u_ViewMatrix = gl.getUniformLocation(gl.program, "u_ViewMatrix");
-  var u_ModelMatrix = gl.getUniformLocation(gl.program, "u_ModelMatrix");
-  // TODO: Set the matrix to be used for to set the camera view
-  var viewMatrix = new Matrix4();
+  const u_ViewMatrix = gl.getUniformLocation(gl.program, "u_ViewMatrix");
+  const u_ModelMatrix = gl.getUniformLocation(gl.program, "u_ModelMatrix");
+
+  const viewMatrix = new Matrix4();
   viewMatrix.setLookAt(0.2, 0.25, 0.25, 0, 0, 0, 0, 1, 0);
 
-  // Calculate the rotation matrix
-  var ModelMatrix = new Matrix4();
-  ModelMatrix.setRotate(90,0,0,1); // Rotate around the y-axis
+  const modelMatrix = new Matrix4();
+  modelMatrix.setRotate(90, 0, 0, 1);
 
-  // TODO: Set the view matrix in shader
   gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
-  gl.uniformMatrix4fv(u_ModelMatrix, false, ModelMatrix.elements);
-  // Clear <canvas>
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
-  // Draw the rectangle
+  gl.clear(gl.COLOR_BUFFER_BIT);
   gl.drawArrays(gl.TRIANGLES, 0, n);
 }
 
+/**
+ * Initializes the vertex buffers.
+ * @param {WebGLRenderingContext} gl The WebGL rendering context.
+ * @returns {number} The number of vertices.
+ */
 function initVertexBuffers(gl) {
-  // TODO: Prepare linearized coordinates and colors to display 3 triangles
-  var verticesColors = new Float32Array([
+  const verticesColors = new Float32Array([
     // The back green triangle
     0.0, 0.5, -0.4, 0.4, 1.0, 0.4,
     -0.5, -0.5, -0.4, 0.4, 1.0, 0.4,
     0.5, -0.5, -0.4, 1.0, 0.4, 0.4,
-  
     // The middle yellow triangle
     0.5, 0.4, -0.2, 1.0, 0.4, 0.4,
     -0.5, 0.4, -0.2, 1.0, 1.0, 0.4,
     0.0, -0.6, -0.2, 1.0, 1.0, 0.4,
-  
     // The front blue triangle
     0.0, 0.5, 0.0, 0.4, 0.4, 1.0,
     -0.5, -0.5, 0.0, 0.4, 0.4, 1.0,
-    0.5, -0.5, 0.0, 1.0, 0.4, 0.4
+    0.5, -0.5, 0.0, 1.0, 0.4, 0.4,
   ]);
-  
-  var n = 9;
 
-  // Create a buffer object
-  var vertexColorbuffer = gl.createBuffer();
-  if (!vertexColorbuffer) {
+  const n = 9;
+
+  const vertexColorBuffer = gl.createBuffer();
+  if (!vertexColorBuffer) {
     console.log("Failed to create the buffer object");
     return -1;
   }
 
-  // Write the vertex coordinates and color to the buffer object
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorbuffer);
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, verticesColors, gl.STATIC_DRAW);
 
-  var FSIZE = verticesColors.BYTES_PER_ELEMENT;
-  // Assign the buffer object to a_Position and enable the assignment
-  var a_Position = gl.getAttribLocation(gl.program, "a_Position");
+  const FSIZE = verticesColors.BYTES_PER_ELEMENT;
+
+  const a_Position = gl.getAttribLocation(gl.program, "a_Position");
   if (a_Position < 0) {
     console.log("Failed to get the storage location of a_Position");
     return -1;
@@ -111,8 +110,7 @@ function initVertexBuffers(gl) {
   gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 6, 0);
   gl.enableVertexAttribArray(a_Position);
 
-  // Assign the buffer object to a_Color and enable the assignment
-  var a_Color = gl.getAttribLocation(gl.program, "a_Color");
+  const a_Color = gl.getAttribLocation(gl.program, "a_Color");
   if (a_Color < 0) {
     console.log("Failed to get the storage location of a_Color");
     return -1;
@@ -120,7 +118,6 @@ function initVertexBuffers(gl) {
   gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 6, FSIZE * 3);
   gl.enableVertexAttribArray(a_Color);
 
-  // Unbind the buffer object
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   return n;
