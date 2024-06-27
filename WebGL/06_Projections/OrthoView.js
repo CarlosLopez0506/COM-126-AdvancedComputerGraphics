@@ -1,29 +1,47 @@
-// OrthoView.js (c) 2012 matsuda
+// LookAtTriangles.js (c) 2012 matsuda
 // Vertex shader program
 // TODO: Prepare shader to deal with projection matrices
 var VSHADER_SOURCE =
-  "attribute vec4 a_Position;\n" +
-  "attribute vec4 a_Color;\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_Position = a_Position;\n" +
-  "  v_Color = a_Color;\n" +
-  "}\n";
+  `
+attribute vec4 a_Position;
+attribute vec4 a_Color;
+
+varying vec4 v_Color;
+
+uniform mat4 u_ViewModelMatrix;
+
+void main(){
+  gl_Position = u_ViewModelMatrix * a_Position;
+  v_Color = a_Color;
+}
+`
 
 // Fragment shader program
 var FSHADER_SOURCE =
-  "#ifdef GL_ES\n" +
-  "precision mediump float;\n" +
-  "#endif\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_FragColor = v_Color;\n" +
-  "}\n";
+  `
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec4 v_Color;
+
+void main(){
+  gl_FragColor = v_Color;
+}
+`
+
+let px = 0.25;
+let py = 0.25;
+let pz = 0.25
+let step = 0.1;
+
+let g_near = 0.0;
+let g_far = 0.5;
 
 function main() {
   // Retrieve <canvas> element
   var canvas = document.getElementById("webgl");
-  // TODO: Retrieve the nearFar element (Check html)
+  var nf = document.getElementById("nearFar")
 
   // Get the rendering context for WebGL
   var gl = getWebGLContext(canvas);
@@ -48,19 +66,112 @@ function main() {
   // Specify the color for clearing <canvas>
   gl.clearColor(0, 0, 0, 1);
 
-  // TODO: get the storage location of u_ProjMatrix
+  // TODO: Get the storage location of u_ViewMatrix
+  const u_ViewModelMatrix = gl.getUniformLocation(gl.program, "u_ViewModelMatrix");
+  if (u_ViewModelMatrix < 0) {
+    console.error("Failed to the the storage location of u_ViewModelMatrix");
+    return -1;
+  }
 
-  // TODO: Create the matrix to set the eye point, and the line of sight
+  // TODO: Set the matrix to be used for to set the camera view
+  let viewMatrix = new Matrix4();
+  viewMatrix.setLookAt(px, py, pz, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
-  // TODO: Register the event handler to be called on key press
+  let modelMatrix = new Matrix4();
+  modelMatrix.setRotate(90, 0, 1, 0);
 
-  // TODO: complete the parameters for draw
-  // draw(gl, n, ..., ..., ...);   // Draw
+  let modelViewMatrix = viewMatrix.multiply(modelMatrix)
+
+  // TODO: Set the view matrix in shader
+  gl.uniformMatrix4fv(u_ViewModelMatrix, false, modelViewMatrix.elements);
+  // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  // Draw the rectangle
+  gl.drawArrays(gl.TRIANGLES, 0, n);
+
+
+  window.onkeydown = (evt) => {
+    if (evt.keyCode === 65) { //a
+      px += step;
+    }
+    if (evt.keyCode === 68) { //d
+      px -= step;
+    }
+    if (evt.keyCode === 87) { //w
+      py += step;
+    }
+
+    if (evt.keyCode === 83) { //s
+      py -= step;
+    }
+
+    if (evt.keyCode === 81) { //q
+      pz += step;
+    }
+
+    if (evt.keyCode === 69) { //e
+      pz -= step
+    }
+
+    if (evt.keyCode === 85) { //u
+      g_far += step;
+    }
+    if (evt.keyCode === 73) { //i
+      g_far -= step;
+    }
+
+    if (evt.keyCode === 79) { //u
+      g_near += step;
+    }
+    if (evt.keyCode === 80) { //i
+      g_near -= step;
+    }
+
+    // TODO: Set the matrix to be used for to set the camera view
+    viewMatrix = new Matrix4();
+    viewMatrix.setLookAt(px, py, pz, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+
+    modelMatrix = new Matrix4();
+    modelMatrix.setRotate(90, 0, 1, 0);
+
+    modelViewMatrix = viewMatrix.multiply(modelMatrix);
+
+    modelViewMatrix.setOrtho(-1.0, 1.0, -1.0, 1.0, g_near, g_far);
+
+    // TODO: Set the view matrix in shader
+    gl.uniformMatrix4fv(u_ViewModelMatrix, false, modelViewMatrix.elements);
+
+    // Clear <canvas>
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    nf.innerHTML = `near: ${Math.round(g_near * 100) / 100}\tfar: ${Math.round(g_far * 100) / 100}`
+
+    // Draw the rectangle
+    gl.drawArrays(gl.TRIANGLES, 0, n);
+
+
+
+  }
 }
+
+
 
 function initVertexBuffers(gl) {
   // TODO: Prepare linearized coordinates and colors to display 3 triangles
-  var verticesColors = new Float32Array([]);
+  var verticesColors = new Float32Array([
+    //XYZ, RGB
+    0.0, 0.5, -0.4, 1.0, 0.0, 0.0,
+    -0.5, -0.5, -0.4, 0.0, 1.0, 0.0,
+    0.5, -0.5, -0.4, 0.0, 0.0, 1.0,
+
+    0.5, 0.5, -0.2, 0.0, 1.0, 1.0,
+    -0.5, 0.5, -0.2, 1.0, 0.0, 1.0,
+    0.0, -0.5, -0.2, 1.0, 1.0, 0.0,
+
+    0.0, 0.5, 0.0, 1.0, 1.0, 1.0,
+    -0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
+    0.5, -0.5, 0.0, 0.0, 0.0, 0.0,
+  ]);
   var n = 9;
 
   // Create a buffer object
@@ -83,6 +194,7 @@ function initVertexBuffers(gl) {
   }
   gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 6, 0);
   gl.enableVertexAttribArray(a_Position);
+
   // Assign the buffer object to a_Color and enable the assignment
   var a_Color = gl.getAttribLocation(gl.program, "a_Color");
   if (a_Color < 0) {
@@ -92,29 +204,8 @@ function initVertexBuffers(gl) {
   gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 6, FSIZE * 3);
   gl.enableVertexAttribArray(a_Color);
 
+  // Unbind the buffer object
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
   return n;
-}
-
-// The distances to the near and far clipping plane
-var g_near = 0.0,
-  g_far = 0.5;
-// TODO: Define transformations from keys
-// The right arrow key was pressed: keyCode = 39
-// The left arrow key was pressed: keyCode = 37
-// The up arrow key was pressed: keyCode = 38
-// The down arrow key was pressed: keyCode = 40
-// TODO: Fix the method signature
-function keydown(ev, gl, n, u, v, p) {}
-
-// TODO: Fix the method signature
-function draw(gl, n, u, v, p) {
-  // TODO: Specify the viewing volume
-
-  // TODO: Pass the projection matrix to u_ProjMatrix
-
-  gl.clear(gl.COLOR_BUFFER_BIT); // Clear <canvas>
-
-  // TODO: Display the current near and far values in html screen
-
-  gl.drawArrays(gl.TRIANGLES, 0, n); // Draw the triangles
 }
