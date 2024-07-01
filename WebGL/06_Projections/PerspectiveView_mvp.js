@@ -1,104 +1,159 @@
-// PerspectiveView_mvp.js (c) 2012 matsuda
-// Vertex shader program
-// TODO: Prepare shader to deal with projection matrices
-var VSHADER_SOURCE =
-  "attribute vec4 a_Position;\n" +
-  "attribute vec4 a_Color;\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_Position = a_Position;\n" +
-  "  v_Color = a_Color;\n" +
-  "}\n";
+/**
+ * Vertex shader program
+ * @type {string}
+ */
+const VSHADER_SOURCE = `
+  attribute vec4 a_Position;
+  attribute vec4 a_Color;
+  uniform mat4 u_ModelMatrix;
+  uniform mat4 u_ViewMatrix;
+  uniform mat4 u_ProjMatrix;
+  varying vec4 v_Color;
+  void main() {
+    gl_Position = u_ProjMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
+    v_Color = a_Color;
+  }
+`;
 
-// Fragment shader program
-var FSHADER_SOURCE =
-  "#ifdef GL_ES\n" +
-  "precision mediump float;\n" +
-  "#endif\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_FragColor = v_Color;\n" +
-  "}\n";
+/**
+ * Fragment shader program
+ * @type {string}
+ */
+const FSHADER_SOURCE = `
+  #ifdef GL_ES
+  precision mediump float;
+  #endif
+  varying vec4 v_Color;
+  void main() {
+    gl_FragColor = v_Color;
+  }
+`;
 
+/**
+ * The main entry point for the application
+ */
 function main() {
-  // Retrieve <canvas> element
-  var canvas = document.getElementById("webgl");
+  /** @type {HTMLCanvasElement} */
+  const canvas = document.getElementById("webgl");
 
-  // Get the rendering context for WebGL
-  var gl = getWebGLContext(canvas);
+  /** @type {WebGLRenderingContext} */
+  const gl = getWebGLContext(canvas);
   if (!gl) {
-    console.log("Failed to get the rendering context for WebGL");
+    console.error("Failed to get the rendering context for WebGL");
     return;
   }
 
-  // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-    console.log("Failed to intialize shaders.");
+    console.error("Failed to initialize shaders.");
     return;
   }
 
-  // Set the vertex coordinates and color (the blue triangle is in the front)
-  var n = initVertexBuffers(gl);
+  /** @type {number} */
+  const n = initVertexBuffers(gl);
   if (n < 0) {
-    console.log("Failed to set the vertex information");
+    console.error("Failed to set the vertex information");
     return;
   }
 
-  // Specify the color for clearing <canvas>
   gl.clearColor(0, 0, 0, 1);
 
-  // TODO: Get the storage locations of u_ModelMatrix, u_ViewMatrix, and u_ProjMatrix
+  /** @type {WebGLUniformLocation} */
+  const u_ModelMatrix = gl.getUniformLocation(gl.program, "u_ModelMatrix");
+  /** @type {WebGLUniformLocation} */
+  const u_ViewMatrix = gl.getUniformLocation(gl.program, "u_ViewMatrix");
+  /** @type {WebGLUniformLocation} */
+  const u_ProjMatrix = gl.getUniformLocation(gl.program, "u_ProjMatrix");
 
-  // TODO: Create model, view and projection matrices
+  if (!u_ViewMatrix || !u_ProjMatrix) {
+    console.error("Failed to get the storage location of u_ViewMatrix or u_ProjMatrix");
+    return;
+  }
 
-  // TODO: Calculate the view matrix and the projection matrix
+  /** @type {Matrix4} */
+  const modelMatrix = new Matrix4();
+  /** @type {Matrix4} */
+  const viewMatrix = new Matrix4();
+  /** @type {Matrix4} */
+  const projMatrix = new Matrix4();
 
-  // TODO: Pass the model, view, and projection matrix to the uniform variable respectively
+  viewMatrix.setLookAt(0, 0, 8, 0, 0, -100, 0, 1, 0);
+  projMatrix.setPerspective(30, canvas.width / canvas.height, 1, 100); // Fixed typo here
+  modelMatrix.setTranslate(0.75, 0, 0); // Translate 0.75 units
 
-  gl.clear(gl.COLOR_BUFFER_BIT); // Clear <canvas>
+  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
+  gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
+  gl.uniformMatrix4fv(u_ProjMatrix, false, projMatrix.elements);
 
-  gl.drawArrays(gl.TRIANGLES, 0, n); // Draw the triangles
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.drawArrays(gl.TRIANGLES, 0, n); // Draw triangles on right
 
-  // TODO: Prepare the model matrix for another pair of triangles
-  // Translate 0.75 units along the negative x-axis
-
-  // TODO: Modify only the model matrix
-
-  gl.drawArrays(gl.TRIANGLES, 0, n); // Draw the triangles
+  modelMatrix.setTranslate(-0.75, 0, 0); // Translate -0.75
+  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
+  gl.drawArrays(gl.TRIANGLES, 0, n); // Draw triangles on left
 }
 
+/**
+ * Initializes the vertex buffers
+ * @param {WebGLRenderingContext} gl The WebGL rendering context
+ * @returns {number} The number of vertices
+ */
 function initVertexBuffers(gl) {
-  // TODO: Prepare linearized coordinates and colors to display 3 triangles
-  var verticesColors = new Float32Array([]);
-  var n = 9;
+  /** @type {Float32Array} */
+  var verticesColors = new Float32Array([
+    // Three triangles on the right side
+    0.75, 1.0, -4.0, 0.4, 1.0, 0.4, // The green triangle in back
+    0.25, -1.0, -4.0, 0.4, 1.0, 0.4,
+    1.25, -1.0, -4.0, 1.0, 0.4, 0.4,
 
-  // Create a buffer object
-  var vertexColorbuffer = gl.createBuffer();
+    0.75, 1.0, -2.0, 1.0, 1.0, 0.4, // The yellow triangle in middle
+    0.25, -1.0, -2.0, 1.0, 1.0, 0.4,
+    1.25, -1.0, -2.0, 1.0, 0.4, 0.4,
+
+    0.75, 1.0, 0.0, 0.4, 0.4, 1.0, // The blue triangle in front
+    0.25, -1.0, 0.0, 0.4, 0.4, 1.0,
+    1.25, -1.0, 0.0, 1.0, 0.4, 0.4,
+
+    // Three triangles on the left side
+    -0.75, 1.0, -4.0, 0.4, 1.0, 0.4, // The green triangle in back
+    -1.25, -1.0, -4.0, 0.4, 1.0, 0.4,
+    -0.25, -1.0, -4.0, 1.0, 0.4, 0.4,
+
+    -0.75, 1.0, -2.0, 1.0, 1.0, 0.4, // The yellow triangle in middle
+    -1.25, -1.0, -2.0, 1.0, 1.0, 0.4,
+    -0.25, -1.0, -2.0, 1.0, 0.4, 0.4,
+
+    -0.75, 1.0, 0.0, 0.4, 0.4, 1.0, // The blue triangle in front
+    -1.25, -1.0, 0.0, 0.4, 0.4, 1.0,
+    -0.25, -1.0, 0.0, 1.0, 0.4, 0.4,
+  ]);
+  
+  const n = verticesColors.length / 6; // Calculate number of vertices based on data length
+
+  /** @type {WebGLBuffer} */
+  const vertexColorbuffer = gl.createBuffer();
   if (!vertexColorbuffer) {
-    console.log("Failed to create the buffer object");
+    console.error("Failed to create the buffer object");
     return -1;
   }
 
-  // Write the vertex information and enable it
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorbuffer);
   gl.bufferData(gl.ARRAY_BUFFER, verticesColors, gl.STATIC_DRAW);
 
-  var FSIZE = verticesColors.BYTES_PER_ELEMENT;
+  const FSIZE = verticesColors.BYTES_PER_ELEMENT;
 
-  // Assign the buffer object to a_Position and enable the assignment
-  var a_Position = gl.getAttribLocation(gl.program, "a_Position");
+  /** @type {number} */
+  const a_Position = gl.getAttribLocation(gl.program, "a_Position");
   if (a_Position < 0) {
-    console.log("Failed to get the storage location of a_Position");
+    console.error("Failed to get the storage location of a_Position");
     return -1;
   }
-
   gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 6, 0);
   gl.enableVertexAttribArray(a_Position);
 
-  // Assign the buffer object to a_Color and enable the assignment
-  var a_Color = gl.getAttribLocation(gl.program, "a_Color");
+  /** @type {number} */
+  const a_Color = gl.getAttribLocation(gl.program, "a_Color");
   if (a_Color < 0) {
-    console.log("Failed to get the storage location of a_Color");
+    console.error("Failed to get the storage location of a_Color");
     return -1;
   }
   gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 6, FSIZE * 3);

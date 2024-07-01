@@ -1,93 +1,118 @@
-// LookAtTrianglesWithKey_ViewVolume.js (c) 2012 matsuda
-// Vertex shader program
-// TODO: Prepare shader to deal with projection matrices
-var VSHADER_SOURCE =
-  "attribute vec4 a_Position;\n" +
-  "attribute vec4 a_Color;\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_Position = a_Position;\n" +
-  "  v_Color = a_Color;\n" +
-  "}\n";
+/**
+ * Vertex shader program
+ */
+const VSHADER_SOURCE = `
+  attribute vec4 a_Position;
+  attribute vec4 a_Color;
+  uniform mat4 u_ViewMatrix;
+  uniform mat4 u_ProjMatrix;
+  varying vec4 v_Color;
+  void main() {
+    gl_Position = u_ProjMatrix * u_ViewMatrix * a_Position;
+    v_Color = a_Color;
+  }
+`;
 
-// Fragment shader program
-var FSHADER_SOURCE =
-  "#ifdef GL_ES\n" +
-  "precision mediump float;\n" +
-  "#endif\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_FragColor = v_Color;\n" +
-  "}\n";
+/**
+ * Fragment shader program
+ */
+const FSHADER_SOURCE = `
+  #ifdef GL_ES
+  precision mediump float;
+  #endif
+  varying vec4 v_Color;
+  void main() {
+    gl_FragColor = v_Color;
+  }
+`;
 
+/**
+ * Initializes WebGL, shaders, and sets up the scene.
+ */
 function main() {
-  // Retrieve <canvas> element
-  var canvas = document.getElementById("webgl");
-
-  // Get the rendering context for WebGL
-  var gl = getWebGLContext(canvas);
+  const canvas = document.getElementById("webgl");
+  const gl = getWebGLContext(canvas);
+  
   if (!gl) {
-    console.log("Failed to get the rendering context for WebGL");
+    console.error("Failed to get the rendering context for WebGL");
     return;
   }
 
-  // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-    console.log("Failed to intialize shaders.");
+    console.error("Failed to initialize shaders.");
     return;
   }
 
-  // Set the vertex coordinates and color (the blue triangle is in the front)
-  var n = initVertexBuffers(gl);
+  const n = initVertexBuffers(gl);
   if (n < 0) {
-    console.log("Failed to specify the vertex infromation");
+    console.error("Failed to specify the vertex information");
     return;
   }
 
-  // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-  // TODO: Get the storage locations of u_ViewMatrix and u_ProjMatrix variables
+  const u_ViewMatrix = gl.getUniformLocation(gl.program, "u_ViewMatrix");
+  const u_ProjMatrix = gl.getUniformLocation(gl.program, "u_ProjMatrix");
 
-  // TODO: Create the matrix to specify the view matrix
+  if (!u_ViewMatrix || !u_ProjMatrix) {
+    console.error("Failed to get the storage location of u_ViewMatrix or u_ProjMatrix");
+    return;
+  }
 
-  // TODO: Register the event handler to be called on key press
+  const viewMatrix = new Matrix4();
+  document.onkeydown = (ev) => keydown(ev, gl, n, u_ViewMatrix, viewMatrix);
 
-  // TODO: Create the matrix to specify the viewing volume and pass it to shader
+  const projMatrix = new Matrix4();
+  projMatrix.setOrtho(-1.0, 1.0, -1.0, 1.0, 0.0, 6.0);
+  gl.uniformMatrix4fv(u_ProjMatrix, false, projMatrix.elements);
 
-  // TODO: complete the parameters for draw
-  // draw(gl, n, ..., ...);   // Draw
+  draw(gl, n, u_ViewMatrix, viewMatrix);
 }
 
+/**
+ * Initializes the vertex buffer with coordinates and colors.
+ * @param {WebGLRenderingContext} gl 
+ * @returns {number} Number of vertices
+ */
 function initVertexBuffers(gl) {
-  // TODO: Prepare linearized coordinates and colors to display 3 triangles
-  var verticesColors = new Float32Array([]);
-  var n = 9;
+  const verticesColors = new Float32Array([
+    // Vertex coordinates and color
+    0.0,  0.5,  -0.4,  0.4, 1.0, 0.4,
+   -0.5, -0.5,  -0.4,  0.4, 1.0, 0.4,
+    0.5, -0.5,  -0.4,  1.0, 0.4, 0.4, 
 
-  // Create a buffer object
-  var vertexColorbuffer = gl.createBuffer();
+    0.5,  0.4,  -0.2,  1.0, 0.4, 0.4,
+   -0.5,  0.4,  -0.2,  1.0, 1.0, 0.4,
+    0.0, -0.6,  -0.2,  1.0, 1.0, 0.4,
+
+    0.0,  0.5,   0.0,  0.4, 0.4, 1.0,
+   -0.5, -0.5,   0.0,  0.4, 0.4, 1.0,
+    0.5, -0.5,   0.0,  1.0, 0.4, 0.4
+  ]);
+  const n = 9;
+
+  const vertexColorbuffer = gl.createBuffer();
   if (!vertexColorbuffer) {
-    console.log("Failed to create the buffer object");
+    console.error("Failed to create the buffer object");
     return -1;
   }
 
-  // Write vertex information to buffer object
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorbuffer);
   gl.bufferData(gl.ARRAY_BUFFER, verticesColors, gl.STATIC_DRAW);
 
-  var FSIZE = verticesColors.BYTES_PER_ELEMENT;
-  // Assign the buffer object to a_Position and enable the assignment
-  var a_Position = gl.getAttribLocation(gl.program, "a_Position");
+  const FSIZE = verticesColors.BYTES_PER_ELEMENT;
+
+  const a_Position = gl.getAttribLocation(gl.program, "a_Position");
   if (a_Position < 0) {
-    console.log("Failed to get the storage location of a_Position");
+    console.error("Failed to get the storage location of a_Position");
     return -1;
   }
   gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 6, 0);
   gl.enableVertexAttribArray(a_Position);
-  // Assign the buffer object to a_Color and enable the assignment
-  var a_Color = gl.getAttribLocation(gl.program, "a_Color");
+
+  const a_Color = gl.getAttribLocation(gl.program, "a_Color");
   if (a_Color < 0) {
-    console.log("Failed to get the storage location of a_Color");
+    console.error("Failed to get the storage location of a_Color");
     return -1;
   }
   gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 6, FSIZE * 3);
@@ -96,24 +121,48 @@ function initVertexBuffers(gl) {
   return n;
 }
 
-var g_EyeX = 0.2,
-  g_EyeY = 0.25,
-  g_EyeZ = 0.25; // Eye position
-// TODO: Define transformations from keys
-// The right arrow key was pressed: keyCode = 39
-// The left arrow key was pressed: keyCode = 37
-// TODO: Fix the method signature
-function keydown(ev, gl, n, u, v) {}
+let g_EyeX = 0.2;
+let g_EyeY = 0.25;
+let g_EyeZ = 0.25;
 
-// TODO: Fix the method signature
-function draw(gl, n, u, v) {
-  // TODO: Set the matrix to be used for to set the camera view
+/**
+ * Handles keydown events to adjust the view based on arrow key inputs.
+ * @param {KeyboardEvent} ev 
+ * @param {WebGLRenderingContext} gl 
+ * @param {number} n 
+ * @param {WebGLUniformLocation} u_ViewMatrix 
+ * @param {Matrix4} viewMatrix 
+ */
+function keydown(ev, gl, n, u_ViewMatrix, viewMatrix) {
+  switch (ev.keyCode) {
+    case 39: // Right arrow key
+      g_EyeX += 0.03;
+      break;
+    case 37: // Left arrow key
+      g_EyeX -= 0.03;
+      break;
+    case 38: // Up arrow key
+      g_EyeY += 0.03;
+      break;
+    case 40: // Down arrow key
+      g_EyeY -= 0.03;
+      break;
+    default:
+      return;
+  }
+  draw(gl, n, u_ViewMatrix, viewMatrix);
+}
 
-  // TODO: Pass the view projection matrix
-
-  // Clear <canvas>
+/**
+ * Draws the scene.
+ * @param {WebGLRenderingContext} gl 
+ * @param {number} n 
+ * @param {WebGLUniformLocation} u_ViewMatrix 
+ * @param {Matrix4} viewMatrix 
+ */
+function draw(gl, n, u_ViewMatrix, viewMatrix) {
+  viewMatrix.setLookAt(g_EyeX, g_EyeY, g_EyeZ, 0, 0, 0, 0, 1, 0);
+  gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
   gl.clear(gl.COLOR_BUFFER_BIT);
-
-  // Draw the rectangle
   gl.drawArrays(gl.TRIANGLES, 0, n);
 }
