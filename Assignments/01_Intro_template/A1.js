@@ -62,7 +62,7 @@ scene.add(floor);
 floor.parent = worldFrame;
 
 // UNIFORMS
-var remotePosition = { type: "v3", value: new THREE.Vector3(0, 5, 5 ) };
+var remotePosition = { type: "v3", value: new THREE.Vector3(0, 5, 8 ) };
 var rcState = { type: "i", value: 1 };
 var explosionFactor = {type: "f", value:0.0}; // Initial explosion factor
 var transitionDuration = 3000; // Transition duration in milliseconds
@@ -74,7 +74,8 @@ var startTime = 0; // Start time of the transition
 var racoonMaterial = new THREE.ShaderMaterial({
   uniforms: {
     remotePosition: remotePosition,
-    explosionFactor: explosionFactor
+    explosionFactor: explosionFactor,
+    rcState: rcState
   },
 });
 

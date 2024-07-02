@@ -25,19 +25,6 @@ void main() {
         vec4(0.0, 0.0, 0.0, 1.0)
     );
 
-    mat4 rYPos = mat4(
-        vec4(cos(0.0), 0.0, sin(0.0), 0.0),
-        vec4(0.0, 1.0, 0.0, 0.0),
-        vec4(-sin(0.0), 0.0, cos(0.0), 0.0),
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
-
-    mat4 rZPos = mat4(
-        vec4(cos(0.0), -sin(0.0), 0.0, 0.0),
-        vec4(sin(0.0), cos(0.0), 0.0, 0.0),
-        vec4(0.0, 0.0, 1.0, 0.0),
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
 
     vec3 displacedPosition = position + normal * explosionFactor;
 

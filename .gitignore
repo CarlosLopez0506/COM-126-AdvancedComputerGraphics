@@ -128,3 +128,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+WebGL/01_FirstSteps.zip
+WebGL/02_Primitives.zip
+WebGL/03_Transformations.zip
+WebGL/04_Color.zip
+WebGL/05_Textures.zip
+WebGL/06_Projections.zip
+
