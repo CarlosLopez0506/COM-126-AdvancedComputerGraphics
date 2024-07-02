@@ -1,10 +1,13 @@
-// The uniform variable is set up in the javascript code and the same for all vertices
 uniform vec3 remotePosition;
 
 void main() {
-	/* HINT: WORK WITH remotePosition HERE! */
 
-    // Multiply each vertex by the model-view matrix and the projection matrix to get final vertex position
-
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    mat4 tPos = mat4(
+    vec4(1.0, 0.0, 0.0, 0.0),
+    vec4(0.0, 1.0, 0.0, 0.0),
+    vec4(0.0, 0.0, 1.0, 0.0),
+    vec4(remotePosition.x, remotePosition.y, remotePosition.z, 1.0)
+    );
+    
+    gl_Position = projectionMatrix * modelViewMatrix *tPos * vec4(position ,1.0);
 }

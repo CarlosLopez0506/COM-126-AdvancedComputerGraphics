@@ -1,8 +1,21 @@
-// Create shared variable. The value is given as the interpolation between normals computed in the vertex shader
+precision mediump float;
+
+uniform vec3 remotePosition;
 varying vec3 interpolatedNormal;
-/* HINT: YOU WILL NEED A DIFFERENT SHARED VARIABLE TO COLOR ACCORDING TO POSITION */
+varying vec3 vertexPosition; 
+
+
 
 void main() {
-  // Set final rendered color according to the surface normal
-  gl_FragColor = vec4(normalize(interpolatedNormal), 1.0); // REPLACE ME
-}
+    float distance = length(vertexPosition - remotePosition);
+
+    float threshold = 5.0; 
+
+    vec4 closeColor = vec4(vec3(0.2*interpolatedNormal.r,0.2*interpolatedNormal.g ,0.2*interpolatedNormal.b), 1.0);
+    vec4 normalColor = vec4(normalize(interpolatedNormal), 1.0);
+
+    if (distance < threshold) {
+        gl_FragColor = closeColor;
+    } else {
+        gl_FragColor = normalColor;
+    }}

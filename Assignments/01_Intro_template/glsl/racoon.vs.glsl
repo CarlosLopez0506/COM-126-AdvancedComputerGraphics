@@ -1,12 +1,51 @@
-// Create shared variable for the vertex and fragment shaders
-varying vec3 interpolatedNormal;
-/* HINT: YOU WILL NEED A DIFFERENT SHARED VARIABLE TO COLOR ACCORDING TO POSITION */
+precision mediump float;
+
+varying mediump vec3 interpolatedNormal;
+varying mediump vec3 vertexPosition;
+
+uniform float explosionFactor;
 
 void main() {
-    // Set shared variable to vertex normal
-    interpolatedNormal = normal;
+    mat4 sPos = mat4(vec4(4.0, 0.0, 0.0, 0.0),
+                     vec4(0.0, 4.0, 0.0, 0.0),
+                     vec4(0.0, 0.0, 4.0, 0.0),
+                     vec4(0.0, 0.0, 0.0, 1.0));
 
-    // Multiply each vertex by the model-view matrix and the projection matrix to get final vertex position
-    
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    mat4 tPos = mat4(
+        vec4(1.0, 0.0, 0.0, 0.0),
+        vec4(0.0, 1.0, 0.0, 0.0),
+        vec4(0.0, 0.0, 1.0, 0.0),
+        vec4(0, 0, 0, 1.0)
+    );
+
+    mat4 rXPos = mat4(
+        vec4(1.0, 0.0, 0.0, 0.0),
+        vec4(0.0, cos(1.5), -sin(1.5), 0.0),
+        vec4(0.0, sin(1.5), cos(1.5), 0.0),
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+
+    mat4 rYPos = mat4(
+        vec4(cos(0.0), 0.0, sin(0.0), 0.0),
+        vec4(0.0, 1.0, 0.0, 0.0),
+        vec4(-sin(0.0), 0.0, cos(0.0), 0.0),
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+
+    mat4 rZPos = mat4(
+        vec4(cos(0.0), -sin(0.0), 0.0, 0.0),
+        vec4(sin(0.0), cos(0.0), 0.0, 0.0),
+        vec4(0.0, 0.0, 1.0, 0.0),
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+
+    vec3 displacedPosition = position + normal * explosionFactor;
+
+    vec4 scaledPosition = tPos * rXPos * sPos * vec4(displacedPosition, 1.0);
+
+    vertexPosition = scaledPosition.xyz;
+
+    gl_Position = projectionMatrix * modelViewMatrix * scaledPosition;
+
+    interpolatedNormal = normalize(normalMatrix * normal);
 }
