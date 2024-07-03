@@ -4,11 +4,17 @@
 var VSHADER_SOURCE =
   "attribute vec4 a_Position;\n" +
   "attribute vec4 a_Color;\n" +
+  "attribute vec4 a_Normal;\n" +
   "uniform mat4 u_MvpMatrix;\n" +
+  "uniform mat4 u_NormalMatrix;\n" +
+  "uniform vec3 u_LightDirection;\n" +
   "varying vec4 v_Color;\n" +
+  "varying float v_Dot;\n" +
   "void main() {\n" +
   "  gl_Position = u_MvpMatrix * a_Position ;\n" +
-  "  v_Color = a_Color;\n" +
+  "  v_Color = a_Color ;\n" +
+  "  vec4 normal = u_NormalMatrix * a_Normal;\n" +
+  "  v_Dot = max(dot(u_LightDirection, normalize(normal.xyz)),0.0);\n" +
   "}\n";
 
 // Fragment shader program
@@ -18,8 +24,9 @@ var FSHADER_SOURCE =
   "precision mediump float;\n" +
   "#endif\n" +
   "varying vec4 v_Color;\n" +
+  "varying float v_Dot;\n" +
   "void main() {\n" +
-  "  gl_FragColor = v_Color;\n" +
+  "  gl_FragColor = vec4(v_Color.rgb * v_Dot, v_Color.a);\n" +
   "}\n";
 
 function main() {
@@ -51,21 +58,26 @@ function main() {
   gl.enable(gl.DEPTH_TEST);
 
   // Get the storage locations of uniform variables and so on
-  var u_mvpMatrix = gl.getUniformLocation(gl.program, "u_mvpMatrix");
+  var u_mvpMatrix = gl.getUniformLocation(gl.program, "u_MvpMatrix");
   if (!u_mvpMatrix) {
     console.log("Failed to get the storage location");
     return;
   }
 
   // TODO: get reference to light color and normal matrix from shader
-
+  var u_NormalMatrix = gl.getUniformLocation(gl.program, "u_NormalMatrix");
+  var u_LightDirection = gl.getUniformLocation(gl.program, "u_LightDirection");
+  if (!u_NormalMatrix || !u_LightDirection) {
+    console.log("Failed to get the storage location");
+    return;
+  }
   // Set the viewing volume
   var viewMatrix = new Matrix4(); // View matrix
   var mvpMatrix = new Matrix4(); // Model view projection matrix
   var mvMatrix = new Matrix4(); // Model matrix
 
   // TODO: Create the transformation matrix for normals
-
+  var normalMatrix = new Matrix4();
   // Calculate the view matrix
   viewMatrix.setLookAt(0, 3, 10, 0, 0, 0, 0, 1, 0);
   mvMatrix.set(viewMatrix).rotate(60, 0, 1, 0); // Rotate 60 degree around the y-axis
@@ -73,13 +85,17 @@ function main() {
   mvpMatrix.setPerspective(30, 1, 1, 100);
   mvpMatrix.multiply(mvMatrix);
   // TODO: Calculate the matrix to transform the normal based on the model matrix
-
+  normalMatrix.setInverseOf(mvMatrix);
+  normalMatrix.transpose();
   // Pass the model view matrix to u_mvpMatrix
   gl.uniformMatrix4fv(u_mvpMatrix, false, mvpMatrix.elements);
 
   // TODO: Pass the normal matrixu_normalMatrix
-
+  gl.uniformMatrix4fv(u_NormalMatrix, false, normalMatrix.elements);
   // TODO: Pass the direction of the diffuse light(world coordinate, normalized)
+  var lightDirection = new Vector3([0.5, 3.0, 4.0]);
+  lightDirection.normalize();
+  gl.uniform3fv(u_LightDirection, lightDirection.elements);
 
   // Clear color and depth buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -117,7 +133,7 @@ function initVertexBuffers(gl) {
     1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v1-v6-v7-v2 left
     1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v7-v4-v3-v2 down
     1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0　    // v4-v7-v6-v5 back
-				 ]);
+         ]);
 
   // Normal
   // prettier-ignore
@@ -145,6 +161,7 @@ function initVertexBuffers(gl) {
   if (!initArrayBuffer(gl, vertices, 3, gl.FLOAT, "a_Position")) return -1;
   if (!initArrayBuffer(gl, colors, 3, gl.FLOAT, "a_Color")) return -1;
   // TODO: Write data to normal buffer
+  if (!initArrayBuffer(gl, normals, 3, gl.FLOAT, "a_Normal")) return -1;
 
   // Write the indices to the buffer object
   var indexBuffer = gl.createBuffer();

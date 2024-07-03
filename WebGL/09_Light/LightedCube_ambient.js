@@ -1,152 +1,186 @@
-// LightedCube_ambient.js (c) 2012 matsuda
-// Vertex shader program
-// TODO: Prepare shader to receive light and normal information
-// TODO: Calculate different aspects for light (ambient, diffuse)
-// TODO: Pass the corresponding data to the fragment shader
-var VSHADER_SOURCE =
-  "attribute vec4 a_Position;\n" +
-  "attribute vec4 a_Color;\n" +
-  "uniform mat4 u_MvpMatrix;\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_Position = u_MvpMatrix * a_Position ;\n" +
-  "  v_Color = a_Color;\n" +
-  "}\n";
+/**
+ * @fileoverview LightedCube_ambient - Renders a lighted cube with ambient lighting using WebGL
+ * @author matsuda (original), [Carlos Lopez] (refactored)
+ */
 
-// Fragment shader program
-// TODO: Receive the lighting information from the vertex shader
-var FSHADER_SOURCE =
-  "#ifdef GL_ES\n" +
-  "precision mediump float;\n" +
-  "#endif\n" +
-  "varying vec4 v_Color;\n" +
-  "void main() {\n" +
-  "  gl_FragColor = v_Color;\n" +
-  "}\n";
+/**
+ * Vertex shader program source
+ * @type {string}
+ */
+const VSHADER_SOURCE = `
+  attribute vec4 a_Position;
+  attribute vec4 a_Color;
+  attribute vec4 a_Normal;
+  uniform mat4 u_MvpMatrix;
+  uniform vec3 u_DiffuseLight;
+  uniform vec3 u_LightDirection;
+  uniform vec3 u_AmbientLight;
+  varying vec4 v_Color;
+  void main() {
+    gl_Position = u_MvpMatrix * a_Position;
+    vec3 normal = normalize(a_Normal.xyz);
+    float nDotL = max(dot(u_LightDirection, normal), 0.0);
+    vec3 diffuse = u_DiffuseLight * a_Color.rgb * nDotL;
+    vec3 ambient = u_AmbientLight * a_Color.rgb;
+    v_Color = vec4(diffuse + ambient, a_Color.a);
+  }`;
 
+/**
+ * Fragment shader program source
+ * @type {string}
+ */
+const FSHADER_SOURCE = `
+  #ifdef GL_ES
+  precision mediump float;
+  #endif
+  varying vec4 v_Color;
+  void main() {
+    gl_FragColor = v_Color;
+  }`;
+
+/**
+ * Main function to set up and render the WebGL scene
+ */
 function main() {
-  // Retrieve <canvas> element
-  var canvas = document.getElementById("webgl");
+  const canvas = document.getElementById('webgl');
+  const gl = getWebGLContext(canvas);
 
-  // Get the rendering context for WebGL
-  var gl = getWebGLContext(canvas);
   if (!gl) {
-    console.log("Failed to get the rendering context for WebGL");
+    console.error('Failed to get the rendering context for WebGL');
     return;
   }
 
-  // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-    console.log("Failed to intialize shaders.");
+    console.error('Failed to initialize shaders.');
     return;
   }
 
-  //
-  var n = initVertexBuffers(gl);
+  const n = initVertexBuffers(gl);
   if (n < 0) {
-    console.log("Failed to set the vertex information");
+    console.error('Failed to set the vertex information');
     return;
   }
 
-  // Set the clear color and enable the depth test
-  gl.clearColor(0, 0, 0, 1);
-  gl.enable(gl.DEPTH_TEST);
+  setupGLState(gl);
+  const uniformLocations = getUniformLocations(gl);
+  if (!uniformLocations) return;
 
-  // Get the storage locations of uniform variables and so on
-  var u_MvpMatrix = gl.getUniformLocation(gl.program, "u_MvpMatrix");
-  if (!u_MvpMatrix) {
-    console.log("Failed to get the storage location");
-    return;
-  }
+  setLightingParameters(gl, uniformLocations);
+  setViewProjection(gl, uniformLocations, canvas);
 
-  // TODO: get reference to light color and normal matrix from shader
-
-  // TODO: Set the light color (white)
-
-  // TODO: Set the light direction (in the world coordinate)
-
-  // TODO: Set the ambient light
-
-  // Calculate the view projection matrix
-  var mvpMatrix = new Matrix4(); // Model view projection matrix
-  mvpMatrix.setPerspective(30, canvas.width / canvas.height, 1, 100);
-  mvpMatrix.lookAt(3, 3, 7, 0, 0, 0, 0, 1, 0);
-  // Pass the model view projection matrix to the variable u_MvpMatrix
-  gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
-
-  // Clear color and depth buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  // Draw the cube
   gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
 }
 
+/**
+ * Sets up the initial WebGL state
+ * @param {WebGLRenderingContext} gl - The WebGL context
+ */
+function setupGLState(gl) {
+  gl.clearColor(0, 0, 0, 1);
+  gl.enable(gl.DEPTH_TEST);
+}
+
+/**
+ * Retrieves uniform locations from the WebGL program
+ * @param {WebGLRenderingContext} gl - The WebGL context
+ * @returns {Object|null} An object containing uniform locations or null if retrieval fails
+ */
+function getUniformLocations(gl) {
+  const uniformNames = ['u_MvpMatrix', 'u_DiffuseLight', 'u_LightDirection', 'u_AmbientLight'];
+  const locations = {};
+
+  for (const name of uniformNames) {
+    locations[name] = gl.getUniformLocation(gl.program, name);
+    if (!locations[name]) {
+      console.error(`Failed to get the storage location of ${name}`);
+      return null;
+    }
+  }
+
+  return locations;
+}
+
+/**
+ * Sets lighting parameters for the scene
+ * @param {WebGLRenderingContext} gl - The WebGL context
+ * @param {Object} uniformLocations - Object containing uniform locations
+ */
+function setLightingParameters(gl, uniformLocations) {
+  gl.uniform3f(uniformLocations.u_DiffuseLight, 1.0, 1.0, 1.0);
+  
+  const lightDirection = new Vector3([0.5, 3.0, 4.0]);
+  lightDirection.normalize();
+  gl.uniform3fv(uniformLocations.u_LightDirection, lightDirection.elements);
+  
+  gl.uniform3f(uniformLocations.u_AmbientLight, 0.2, 0.2, 0.2);
+}
+
+/**
+ * Sets up the view projection matrix
+ * @param {WebGLRenderingContext} gl - The WebGL context
+ * @param {Object} uniformLocations - Object containing uniform locations
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ */
+function setViewProjection(gl, uniformLocations, canvas) {
+  const mvpMatrix = new Matrix4();
+  mvpMatrix.setPerspective(30, canvas.width / canvas.height, 1, 100);
+  mvpMatrix.lookAt(3, 3, 7, 0, 0, 0, 0, 1, 0);
+  gl.uniformMatrix4fv(uniformLocations.u_MvpMatrix, false, mvpMatrix.elements);
+}
+
+/**
+ * Initializes vertex buffers for the cube
+ * @param {WebGLRenderingContext} gl - The WebGL context
+ * @returns {number} The number of indices or -1 if initialization fails
+ */
 function initVertexBuffers(gl) {
-  // Create a cube
-  //    v6----- v5
-  //   /|      /|
-  //  v1------v0|
-  //  | |     | |
-  //  | |v7---|-|v4
-  //  |/      |/
-  //  v2------v3
-  // Coordinates
-  // prettier-ignore
-  var vertices = new Float32Array([
-    1.0, 1.0, 1.0,  -1.0, 1.0, 1.0,  -1.0,-1.0, 1.0,   1.0,-1.0, 1.0, // v0-v1-v2-v3 front
-    1.0, 1.0, 1.0,   1.0,-1.0, 1.0,   1.0,-1.0,-1.0,   1.0, 1.0,-1.0, // v0-v3-v4-v5 right
-    1.0, 1.0, 1.0,   1.0, 1.0,-1.0,  -1.0, 1.0,-1.0,  -1.0, 1.0, 1.0, // v0-v5-v6-v1 up
-   -1.0, 1.0, 1.0,  -1.0, 1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0,-1.0, 1.0, // v1-v6-v7-v2 left
-   -1.0,-1.0,-1.0,   1.0,-1.0,-1.0,   1.0,-1.0, 1.0,  -1.0,-1.0, 1.0, // v7-v4-v3-v2 down
-    1.0,-1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0, 1.0,-1.0,   1.0, 1.0,-1.0  // v4-v7-v6-v5 back
- ]);
-
-  // Colors
-  // prettier-ignore
-  var colors = new Float32Array([
-    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v0-v1-v2-v3 front
-    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v0-v3-v4-v5 right
-    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v0-v5-v6-v1 up
-    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v1-v6-v7-v2 left
-    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v7-v4-v3-v2 down
-    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0    // v4-v7-v6-v5 back
+  const vertices = new Float32Array([
+    1.0, 1.0, 1.0,  -1.0, 1.0, 1.0,  -1.0,-1.0, 1.0,   1.0,-1.0, 1.0,
+    1.0, 1.0, 1.0,   1.0,-1.0, 1.0,   1.0,-1.0,-1.0,   1.0, 1.0,-1.0,
+    1.0, 1.0, 1.0,   1.0, 1.0,-1.0,  -1.0, 1.0,-1.0,  -1.0, 1.0, 1.0,
+   -1.0, 1.0, 1.0,  -1.0, 1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0,-1.0, 1.0,
+   -1.0,-1.0,-1.0,   1.0,-1.0,-1.0,   1.0,-1.0, 1.0,  -1.0,-1.0, 1.0,
+    1.0,-1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0, 1.0,-1.0,   1.0, 1.0,-1.0
   ]);
 
-  // Normal
-  // prettier-ignore
-  var normals = new Float32Array([
-    0.0, 0.0, 1.0,   0.0, 0.0, 1.0,   0.0, 0.0, 1.0,   0.0, 0.0, 1.0,  // v0-v1-v2-v3 front
-    1.0, 0.0, 0.0,   1.0, 0.0, 0.0,   1.0, 0.0, 0.0,   1.0, 0.0, 0.0,  // v0-v3-v4-v5 right
-    0.0, 1.0, 0.0,   0.0, 1.0, 0.0,   0.0, 1.0, 0.0,   0.0, 1.0, 0.0,  // v0-v5-v6-v1 up
-    -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  // v1-v6-v7-v2 left
-    0.0,-1.0, 0.0,   0.0,-1.0, 0.0,   0.0,-1.0, 0.0,   0.0,-1.0, 0.0,  // v7-v4-v3-v2 down
-    0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0   // v4-v7-v6-v5 back
+  const colors = new Float32Array([
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0
   ]);
 
-  // Indices of the vertices
-  // prettier-ignore
-  var indices = new Uint8Array([
-      0, 1, 2,   0, 2, 3,    // front
-      4, 5, 6,   4, 6, 7,    // right
-      8, 9,10,   8,10,11,    // up
-    12,13,14,  12,14,15,    // left
-    16,17,18,  16,18,19,    // down
-    20,21,22,  20,22,23     // back
+  const normals = new Float32Array([
+    0.0, 0.0, 1.0,   0.0, 0.0, 1.0,   0.0, 0.0, 1.0,   0.0, 0.0, 1.0,
+    1.0, 0.0, 0.0,   1.0, 0.0, 0.0,   1.0, 0.0, 0.0,   1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,   0.0, 1.0, 0.0,   0.0, 1.0, 0.0,   0.0, 1.0, 0.0,
+   -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,
+    0.0,-1.0, 0.0,   0.0,-1.0, 0.0,   0.0,-1.0, 0.0,   0.0,-1.0, 0.0,
+    0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0
   ]);
 
-  // Write the vertex property to buffers (coordinates, colors and normals)
-  if (!initArrayBuffer(gl, vertices, 3, gl.FLOAT, "a_Position")) return -1;
-  if (!initArrayBuffer(gl, colors, 3, gl.FLOAT, "a_Color")) return -1;
-  // TODO: Write data to normal buffer
+  const indices = new Uint8Array([
+     0, 1, 2,   0, 2, 3,
+     4, 5, 6,   4, 6, 7,
+     8, 9,10,   8,10,11,
+    12,13,14,  12,14,15,
+    16,17,18,  16,18,19,
+    20,21,22,  20,22,23
+  ]);
 
-  // Unbind the buffer object
+  if (!initArrayBuffer(gl, 'a_Position', vertices, 3)) return -1;
+  if (!initArrayBuffer(gl, 'a_Color', colors, 3)) return -1;
+  if (!initArrayBuffer(gl, 'a_Normal', normals, 3)) return -1;
+
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-  // Write the indices to the buffer object
-  var indexBuffer = gl.createBuffer();
+  const indexBuffer = gl.createBuffer();
   if (!indexBuffer) {
-    console.log("Failed to create the buffer object");
-    return false;
+    console.error('Failed to create the buffer object');
+    return -1;
   }
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
@@ -154,27 +188,35 @@ function initVertexBuffers(gl) {
   return indices.length;
 }
 
-function initArrayBuffer(gl, data, num, type, attribute) {
-  // Create a buffer object
-  var buffer = gl.createBuffer();
+/**
+ * Initializes an array buffer for a given attribute
+ * @param {WebGLRenderingContext} gl - The WebGL context
+ * @param {string} attribute - The attribute name
+ * @param {Float32Array} data - The data to be stored in the buffer
+ * @param {number} num - The number of components per vertex attribute
+ * @returns {boolean} True if initialization succeeds, false otherwise
+ */
+function initArrayBuffer(gl, attribute, data, num) {
+  const buffer = gl.createBuffer();
   if (!buffer) {
-    console.log("Failed to create the buffer object");
+    console.error('Failed to create the buffer object');
     return false;
   }
-  // Write date into the buffer object
+
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-  // Assign the buffer object to the attribute variable
-  var a_attribute = gl.getAttribLocation(gl.program, attribute);
+
+  const a_attribute = gl.getAttribLocation(gl.program, attribute);
   if (a_attribute < 0) {
-    console.log("Failed to get the storage location of " + attribute);
+    console.error('Failed to get the storage location of ' + attribute);
     return false;
   }
-  gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);
-  // Enable the assignment of the buffer object to the attribute variable
-  gl.enableVertexAttribArray(a_attribute);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.vertexAttribPointer(a_attribute, num, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_attribute);
 
   return true;
 }
+
+// Call main function to start the application
+main();
