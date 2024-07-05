@@ -90,8 +90,6 @@ function main() {
   tick();
 }
 
-function draw(gl, n, angle, vpMatrix, u_MvpMatrix, u_NormalMatrix) {}
-
 function initVertexBuffers(gl) {
   // Create a cube
   //    v6----- v5
