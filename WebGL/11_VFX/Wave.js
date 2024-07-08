@@ -103,7 +103,7 @@ function main() {
   var tick = function() {
     
     window.requestAnimationFrame(tick);
-    time += 0.2;
+    time += 0.04;
 
     gl.uniform1f(timeShaderLocation, time);
 
