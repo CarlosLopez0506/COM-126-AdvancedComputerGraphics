@@ -100,12 +100,9 @@ function main() {
   tick();
 }
 
-<<<<<<< HEAD
 function draw(gl, n, angle, vpMatrix, u_MvpMatrix, u_NormalMatrix) {
 }
 
-=======
->>>>>>> 20bd5ff1fd038a1be15fb42697de20984738c305
 function initVertexBuffers(gl) {
   // Create a cube
   //    v6----- v5
