@@ -1,16 +1,25 @@
-// CREATE SCENE
+/*
+ * A2.js
+ * Assignment 2
+ * WebGL template
+ * By: Clopez
+ * Use of ChatGPT for generating documentation and improving readability
+ */
+
+/**
+ * Initialize and run the 3D scene.
+ */
+
 var scene = new THREE.Scene();
 
-// ADD FOG
 scene.fog = new THREE.Fog(0xcdcdcd, 10, 50);
+var isFogEnabled = true;
 
-// SETUP RENDERER
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xcdcdcd);
 document.body.appendChild(renderer.domElement);
 
-// SETUP CAMERA
 var camera = new THREE.PerspectiveCamera(
   25.0,
   window.innerWidth / window.innerHeight,
@@ -20,11 +29,9 @@ var camera = new THREE.PerspectiveCamera(
 camera.position.set(0.0, 15.0, 40.0);
 scene.add(camera);
 
-// SETUP ORBIT CONTROL OF THE CAMERA
 var controls = new THREE.OrbitControls(camera);
 controls.damping = 0.2;
 
-// ADAPT TO WINDOW RESIZE
 function resize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -34,7 +41,6 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-// FLOOR
 var floorTexture = new THREE.ImageUtils.loadTexture("images/checkerboard.jpg");
 floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
 floorTexture.repeat.set(4, 4);
@@ -50,7 +56,6 @@ var floor = new THREE.Mesh(
 floor.rotation.x = Math.PI / 2;
 scene.add(floor);
 
-//TEXTURES
 var rocksTexture = new THREE.ImageUtils.loadTexture(
   "images/gravel-rocks-texture.jpg"
 );
@@ -65,60 +70,54 @@ var racoonTexture = new THREE.ImageUtils.loadTexture(
   }
 );
 
-
-//LIGHTING PROPERTIES
 var lightColor = { type: "c", value: new THREE.Color(1.0, 1.0, 1.0) };
 var ambientColor = { type: "c", value: new THREE.Color(0.4, 0.4, 0.4) };
 var lightPosition = { type: "v3", value: new THREE.Vector3(0.49, 0.79, 0.49) };
 
-//MATERIAL PROPERTIES
 var kAmbient = { type: "f", value: 0.4 };
 var kDiffuse = { type: "f", value: 0.8 };
 var kSpecular = { type: "f", value: 0.8 };
 var shininess = { type: "f", value: 10.0 };
 
-// SHADER MATERIALS (Remember to change this, in order to use uniform variables.)
 var gouraudMaterial = new THREE.ShaderMaterial({
   uniforms: {
-      lightPosition: lightPosition,
-      lightColor: lightColor,
-      ambientColor: ambientColor,
-      diffuseColor: { type: "c", value: new THREE.Color(0.8, 0.8, 0.8) },
-      specularColor: { type: "c", value: new THREE.Color(1.0, 1.0, 1.0) },
-      ambientIntensity: kAmbient,
-      diffuseIntensity: kDiffuse,
-      specularIntensity: kSpecular,
-      shininess: shininess,
-      fogColor: { type: "c", value: scene.fog.color },
-      fogNear: { type: "f", value: scene.fog.near },
-      fogFar: { type: "f", value: scene.fog.far }
+    lightPosition: lightPosition,
+    lightColor: lightColor,
+    ambientColor: ambientColor,
+    diffuseColor: { type: "c", value: new THREE.Color(0.8, 0.8, 0.8) },
+    specularColor: { type: "c", value: new THREE.Color(1.0, 1.0, 1.0) },
+    ambientIntensity: kAmbient,
+    diffuseIntensity: kDiffuse,
+    specularIntensity: kSpecular,
+    shininess: shininess,
   }
 });
 
 var phongMaterial = new THREE.ShaderMaterial({
   uniforms: {
-    lightPosition: lightPosition ,
+    lightPosition: lightPosition,
     lightColor: lightColor,
     ambientColor: { type: "c", value: new THREE.Color(0.2, 0.2, 0.2) },
-    diffuseColor: { type: "c", value: new THREE.Color(0.8, 0.8, 0.8) }, 
-    specularColor: { type: "c", value: new THREE.Color(1.0, 1.0, 1.0) }, 
+    diffuseColor: { type: "c", value: new THREE.Color(0.8, 0.8, 0.8) },
+    specularColor: { type: "c", value: new THREE.Color(1.0, 1.0, 1.0) },
     ambientIntensity: { type: "f", value: 0.5 },
     diffuseIntensity: { type: "f", value: 0.8 },
     specularIntensity: { type: "f", value: 1.0 },
-    shininess: { type: "f", value: 32.0 } 
+    shininess: { type: "f", value: 10.0 }
   }
 });
+
 var blinnPhongMaterial = new THREE.ShaderMaterial({
   uniforms: {
-    lightPosition: lightPosition ,
+    lightPosition: lightPosition,
     lightColor: lightColor,
     ambientColor: { type: "c", value: new THREE.Color(0.2, 0.2, 0.2) },
-    diffuseColor: { type: "c", value: new THREE.Color(0.8, 0.8, 0.8) }, 
-    specularColor: { type: "c", value: new THREE.Color(1.0, 1.0, 1.0) }, 
+    diffuseColor: { type: "c", value: new THREE.Color(0.8, 0.8, 0.8) },
+    specularColor: { type: "c", value: new THREE.Color(1.0, 1.0, 1.0) },
     ambientIntensity: { type: "f", value: 0.5 },
     diffuseIntensity: { type: "f", value: 0.8 },
     specularIntensity: { type: "f", value: 1.0 },
-    shininess: { type: "f", value: 32.0 } 
+    shininess: { type: "f", value: 32.0 }
   }
 });
 
@@ -129,22 +128,20 @@ var textureMaterial = new THREE.ShaderMaterial({
     fogNear: { type: 'f', value: scene.fog.near },
     fogFar: { type: 'f', value: scene.fog.far }
   },
-  fog: true // Enable fog
+  fog: true
 });
 
 var racoonMaterial = new THREE.ShaderMaterial({
   uniforms: {
-      racoonTexture: { type: 't', value: racoonTexture },
-      textureScale: { type: 'f', value: 0.1 },
-      fogColor: { type: 'c', value: scene.fog.color },
-      fogNear: { type: 'f', value: scene.fog.near },
-      fogFar: { type: 'f', value: scene.fog.far }
+    racoonTexture: { type: 't', value: racoonTexture },
+    textureScale: { type: 'f', value: 0.1 },
+    fogColor: { type: 'c', value: scene.fog.color },
+    fogNear: { type: 'f', value: scene.fog.near },
+    fogFar: { type: 'f', value: scene.fog.far }
   },
-  fog: true // Enable fog
+  fog: true
 });
 
-
-// LOAD SHADERS
 var shaderFiles = [
   "glsl/racoon.vs.glsl",
   "glsl/racoon.fs.glsl",
@@ -167,14 +164,25 @@ new THREE.SourceLoader().load(shaderFiles, function (shaders) {
   blinnPhongMaterial.fragmentShader = shaders["glsl/blinnPhong.fs.glsl"];
   textureMaterial.fragmentShader = shaders["glsl/texture.fs.glsl"];
   textureMaterial.vertexShader = shaders["glsl/texture.vs.glsl"];
-
   racoonMaterial.vertexShader = shaders["glsl/racoon.vs.glsl"];
   racoonMaterial.fragmentShader = shaders["glsl/racoon.fs.glsl"];
 });
 
-// WORLD COORDINATE FRAME: other objects are defined with respect to it
 var worldFrame = new THREE.AxisHelper(5);
 scene.add(worldFrame);
+
+/**
+ * Load an OBJ file and add it to the scene.
+ * @param {string} file - The path to the OBJ file.
+ * @param {THREE.Material} material - The material to apply to the OBJ.
+ * @param {number} scale - The scale of the OBJ.
+ * @param {number} xOff - The x offset position.
+ * @param {number} yOff - The y offset position.
+ * @param {number} zOff - The z offset position.
+ * @param {number} xRot - The x rotation.
+ * @param {number} yRot - The y rotation.
+ * @param {number} zRot - The z rotation.
+ */
 function loadOBJ(file, material, scale, xOff, yOff, zOff, xRot, yRot, zRot) {
   var onProgress = function (query) {
     if (query.lengthComputable) {
@@ -217,11 +225,11 @@ loadOBJ(
   0,
   0,
   -5,
-  Math.PI *1.5,
+  Math.PI * 1.5,
   0,
   0
 );
-// CREATE SPHERES
+
 var sphereRadius = 2.0;
 var sphere = new THREE.SphereGeometry(sphereRadius, 16, 16);
 
@@ -241,7 +249,6 @@ var textureSphere = new THREE.Mesh(sphere, textureMaterial);
 textureSphere.position.set(7.5, sphereRadius, 0);
 scene.add(textureSphere);
 
-// Keyboard event listener
 document.addEventListener('keydown', function(event) {
   switch(event.key) {
     case 'l':
@@ -250,16 +257,23 @@ document.addEventListener('keydown', function(event) {
     case 'm':
       randomizeSphereBaseColor();
       break;
+    case 'f':
+      toggleFog();
+      break;
   }
 });
 
-// Function to randomize light color while keeping intensity constant
+/**
+ * Randomize the light color while keeping intensity constant.
+ */
 function randomizeLightColor() {
   var randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
   lightColor.value.copy(randomColor);
 }
 
-// Function to randomize sphere base color while keeping intensity constant
+/**
+ * Randomize the sphere base color while keeping intensity constant.
+ */
 function randomizeSphereBaseColor() {
   var randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
   gouraudMaterial.uniforms.diffuseColor.value.copy(randomColor);
@@ -270,14 +284,39 @@ function randomizeSphereBaseColor() {
   blinnPhongMaterial.uniforms.ambientColor.value.copy(randomColor);
 }
 
-// Ensure shaders are updated after changing uniforms
+/**
+ * Toggle the fog effect on and off.
+ */
+function toggleFog() {
+  isFogEnabled = !isFogEnabled;
+  if (isFogEnabled) {
+    scene.fog = new THREE.Fog(0xcdcdcd, 10, 50);
+    console.log("Fog enabled");
+  } else {
+    scene.fog = null;
+    console.log("Fog disabled");
+  }
+
+  textureMaterial.uniforms.fogColor.value = scene.fog ? scene.fog.color : new THREE.Color(0xcdcdcd);
+  textureMaterial.uniforms.fogNear.value = scene.fog ? scene.fog.near : 1000000;
+  textureMaterial.uniforms.fogFar.value = scene.fog ? scene.fog.far : 1000000;
+
+  racoonMaterial.uniforms.fogColor.value = scene.fog ? scene.fog.color : new THREE.Color(0xcdcdcd);
+  racoonMaterial.uniforms.fogNear.value = scene.fog ? scene.fog.near : 1000000;
+  racoonMaterial.uniforms.fogFar.value = scene.fog ? scene.fog.far : 1000000;
+
+  console.log("Fog uniforms updated", textureMaterial.uniforms.fogNear.value, textureMaterial.uniforms.fogFar.value);
+}
+
+/**
+ * Update shaders to reflect changes in uniforms.
+ */
 function updateShaders() {
   gouraudMaterial.needsUpdate = true;
   phongMaterial.needsUpdate = true;
   blinnPhongMaterial.needsUpdate = true;
 }
 
-// Inside your render loop
 var render = function () {
   textureMaterial.needsUpdate = true;
   racoonMaterial.needsUpdate = true;

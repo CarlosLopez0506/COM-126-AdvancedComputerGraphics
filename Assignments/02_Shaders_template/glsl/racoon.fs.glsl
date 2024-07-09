@@ -22,10 +22,8 @@ void main() {
     vec4 colY = texture2D(racoonTexture, uvY);
     vec4 colZ = texture2D(racoonTexture, uvZ);
 
-    // Blend the colors based on the normal
     vec4 texColor = colX * blendNormal.x + colY * blendNormal.y + colZ * blendNormal.z;
 
-    // Apply fog
     float fogFactor = smoothstep(fogNear, fogFar, fogDepth);
     texColor.rgb = mix(texColor.rgb, fogColor, fogFactor);
 

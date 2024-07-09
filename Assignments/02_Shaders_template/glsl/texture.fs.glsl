@@ -1,7 +1,6 @@
 varying vec2 vUv;
 uniform sampler2D sphereTexture;
 
-// Include the fog fragment uniforms and varying
 uniform vec3 fogColor;
 varying float fogDepth;
 
