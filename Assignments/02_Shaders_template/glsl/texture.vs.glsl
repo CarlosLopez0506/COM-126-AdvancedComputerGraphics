@@ -1,9 +1,13 @@
+varying vec2 vUv;
+
+varying float fogDepth;
 
 void main() {
-	
-	//ADJUST THIS FILE TO SEND PROPER DATA TO THE FRAGMENT SHADER
+    vUv = uv;
 
-   
-    // Multiply each vertex by the model-view matrix and the projection matrix to get final vertex position
+    vec3 mvPosition = vec3(modelViewMatrix * vec4(position, 1.0));
+    fogDepth = -mvPosition.z;
+
+
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }

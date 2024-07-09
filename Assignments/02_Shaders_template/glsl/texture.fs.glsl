@@ -1,10 +1,16 @@
-// Create shared variable. The value is given as the interpolation between normals computed in the vertex shader
+varying vec2 vUv;
+uniform sampler2D sphereTexture;
+
+// Include the fog fragment uniforms and varying
+uniform vec3 fogColor;
+varying float fogDepth;
+
+uniform float fogNear;
+uniform float fogFar;
 
 void main() {
-
-	// LOOK UP THE COLOR IN THE TEXTURE
-
-
-  // Set final rendered color according to the surface normal
-  gl_FragColor = vec4(1.0,0.0,0.0,1.0); 
+    float fogFactor = smoothstep(fogNear, fogFar, fogDepth);
+    vec4 textureColor = texture2D(sphereTexture, vUv);
+    textureColor.rgb = mix(textureColor.rgb, fogColor, fogFactor);
+    gl_FragColor = textureColor;
 }
