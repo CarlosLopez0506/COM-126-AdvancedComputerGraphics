@@ -5,17 +5,13 @@ var VSHADER_SOURCE =
   "uniform mat4 u_modelMatrix;\n" +
   "uniform mat4 u_viewMatrix;\n" +
   "uniform vec3 u_lightDir;\n" +
-  "\n" +
   "attribute vec4 a_Position;\n" +
   "attribute vec2 a_TexCoord;\n" +
-  "\n" +
   "varying vec4 v_Color;\n" +
   "varying vec2 v_TexCoord;\n" +
-  "\n" +
   "void main() {\n" +
   "  mat4 modelViewMatrix = u_viewMatrix * u_modelMatrix;\n" +
   "  gl_Position = u_perspectiveMatrix * modelViewMatrix * a_Position;\n" +
-  "\n" +
   "  v_TexCoord = a_TexCoord;\n" +
   "}\n";
 
@@ -67,23 +63,11 @@ function main() {
     return;
   }
 
-  var perspectiveMatrixShaderLocation = gl.getUniformLocation(
-    gl.program,
-    "u_perspectiveMatrix"
-  );
-  var modelMatrixShaderLocation = gl.getUniformLocation(
-    gl.program,
-    "u_modelMatrix"
-  );
-  var viewMatrixShaderLocation = gl.getUniformLocation(
-    gl.program,
-    "u_viewMatrix"
-  );
-  var lightDirShaderLocation = gl.getUniformLocation(gl.program, "u_lightDir");
-  var textureSamplerShaderLocation = gl.getUniformLocation(
-    gl.program,
-    "u_Sampler"
-  );
+  var u_perspMatrix = gl.getUniformLocation(gl.program, "u_perspectiveMatrix");
+  var u_modelMatrix = gl.getUniformLocation(gl.program, "u_modelMatrix");
+  var u_viewMatrix = gl.getUniformLocation(gl.program, "u_viewMatrix");
+  var u_lightDir = gl.getUniformLocation(gl.program, "u_lightDir");
+  var u_Sampler = gl.getUniformLocation(gl.program, "u_Sampler");
   var alphaShaderLocation = gl.getUniformLocation(gl.program, "u_Alpha");
 
   init_gl(gl);
@@ -95,20 +79,8 @@ function main() {
   var tick = function () {
     window.requestAnimationFrame(tick);
     updateParticle(particle);
-    drawCommon(
-      gl,
-      canvas,
-      perspectiveMatrixShaderLocation,
-      viewMatrixShaderLocation,
-      lightDirShaderLocation
-    );
-    drawParticle(
-      gl,
-      particle,
-      modelMatrixShaderLocation,
-      textureSamplerShaderLocation,
-      alphaShaderLocation
-    );
+    drawCommon(gl, canvas, u_perspMatrix, u_viewMatrix, u_lightDir);
+    drawParticle(gl, particle, u_modelMatrix, u_Sampler, alphaShaderLocation);
   };
   tick();
 }
