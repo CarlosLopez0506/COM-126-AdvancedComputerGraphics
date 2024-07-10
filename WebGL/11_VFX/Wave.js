@@ -24,7 +24,7 @@ var FSHADER_SOURCE =
   "  gl_FragColor = v_Color;\n" +
   "}\n";
 
-var g_perspectiveMatrix = new Matrix4();
+var g_perspMatrix = new Matrix4();
 var g_modelMatrix = new Matrix4();
 var g_viewMatrix = new Matrix4();
 
@@ -49,90 +49,59 @@ function main() {
     return;
   }
 
-  var perspectiveMatrixShaderLocation = gl.getUniformLocation(
-    gl.program,
-    "u_perspectiveMatrix"
-  );
-  var modelMatrixShaderLocation = gl.getUniformLocation(
-    gl.program,
-    "u_modelMatrix"
-  );
-  var viewMatrixShaderLocation = gl.getUniformLocation(
-    gl.program,
-    "u_viewMatrix"
-  );
-  if (
-    !perspectiveMatrixShaderLocation ||
-    !modelMatrixShaderLocation ||
-    !viewMatrixShaderLocation
-  ) {
-    console.log("Failed to get the storage location of uniform variable");
+  // Transformation matrices
+  var u_perspMatrix = gl.getUniformLocation(gl.program, "u_perspectiveMatrix");
+  var u_modelMatrix = gl.getUniformLocation(gl.program, "u_modelMatrix");
+  var u_viewMatrix = gl.getUniformLocation(gl.program, "u_viewMatrix");
+  if (!u_perspMatrix || !u_modelMatrix || !u_viewMatrix) {
+    console.log("Failed to get the storage location");
     return;
   }
+
   // TODO: Pass the uniform variable that represent time for the shader
 
   gl.enable(gl.DEPTH_TEST);
   gl.clearColor(0, 0, 0, 1);
 
-  sendGridVertexBuffers(gl);
+  if (!initVertexBuffers(gl)) {
+    console.log("Failed to set the vertex information");
+    return;
+  }
 
   var time = 0;
 
   var tick = function () {
-    window.requestAnimationFrame(tick);
     // TODO: Update time for the shader
 
-    drawCommon(
-      gl,
-      canvas,
-      perspectiveMatrixShaderLocation,
-      viewMatrixShaderLocation
-    );
-    drawGrid(gl, perspectiveMatrixShaderLocation, modelMatrixShaderLocation);
+    drawCommon(gl, canvas, u_perspMatrix, u_viewMatrix);
+    drawGrid(gl, u_modelMatrix);
+    requestAnimationFrame(tick);
   };
   tick();
 }
 
-function drawCommon(
-  gl,
-  canvas,
-  perspectiveMatrixShaderLocation,
-  viewMatrixShaderLocation
-) {
+function drawCommon(gl, canvas, u_perspMatrix, u_viewMatrix) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear <canvas>
-  g_perspectiveMatrix.setPerspective(
-    30,
-    canvas.width / canvas.height,
-    1,
-    10000
-  );
+  g_perspMatrix.setPerspective(30, canvas.width / canvas.height, 1, 10000);
   g_viewMatrix.setLookAt(0, 3, 5, 0, 0, 0, 0, 1, 0); // eyePos - focusPos - upVector
 
-  gl.uniformMatrix4fv(
-    perspectiveMatrixShaderLocation,
-    false,
-    g_perspectiveMatrix.elements
-  );
-  gl.uniformMatrix4fv(viewMatrixShaderLocation, false, g_viewMatrix.elements);
+  gl.uniformMatrix4fv(u_perspMatrix, false, g_perspMatrix.elements);
+  gl.uniformMatrix4fv(u_viewMatrix, false, g_viewMatrix.elements);
 }
 
-function drawGrid(
-  gl,
-  perspectiveMatrixShaderLocation,
-  modelMatrixShaderLocation
-) {
-  gl.bindBuffer(gl.ARRAY_BUFFER, g_vertexPositionBuffer);
-  var a_Position = gl.getAttribLocation(gl.program, "a_Position");
-  gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_Position);
+function drawGrid(gl, u_modelMatrix) {
+  if (!updateArrayBuffer(gl, g_PositionBuffer, 3, gl.FLOAT, "a_Position")) {
+    console.log("Failed to update a_Position attributes");
+    return;
+  }
 
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g_vertexIndexBuffer);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g_IndexBuffer);
 
   g_modelMatrix.setTranslate(0, 0, 0);
   g_modelMatrix.rotate(0, 0, 1, 0);
   g_modelMatrix.scale(1.0, 1.0, 1.0);
 
-  gl.uniformMatrix4fv(modelMatrixShaderLocation, false, g_modelMatrix.elements);
+  gl.uniformMatrix4fv(u_modelMatrix, false, g_modelMatrix.elements);
   gl.drawElements(gl.TRIANGLES, g_vertexIndexNum, gl.UNSIGNED_SHORT, 0);
 }
 
@@ -164,24 +133,49 @@ function sendGridVertexBuffers(gl) {
     }
   }
 
-  g_vertexPositionBuffer = gl.createBuffer();
-  g_vertexIndexBuffer = gl.createBuffer();
+  g_PositionBuffer = initArrayBuffer(gl, new Float32Array(positionData));
+  if (!g_PositionBuffer) return false;
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, g_vertexPositionBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(positionData),
-    gl.STATIC_DRAW
-  );
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g_vertexIndexBuffer);
+  g_IndexBuffer = gl.createBuffer();
+  if (!g_IndexBuffer) {
+    console.log("Failed to create the buffer object");
+    return false;
+  }
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g_IndexBuffer);
   gl.bufferData(
     gl.ELEMENT_ARRAY_BUFFER,
     new Uint16Array(indexData),
     gl.STATIC_DRAW
   );
-
   g_vertexIndexNum = indexData.length;
+  return true;
+}
 
+function initArrayBuffer(gl, data) {
+  // Create a buffer object
+  var buffer = gl.createBuffer();
+  if (!buffer) {
+    console.log("Failed to create the buffer object");
+    return 0;
+  }
+  // Write date into the buffer object
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+  return buffer;
+}
+
+function updateArrayBuffer(gl, buffer, num, type, attribute) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  var a_attribute = gl.getAttribLocation(gl.program, attribute);
+  if (a_attribute < 0) {
+    console.log("Failed to update the storage location of " + attribute);
+    return false;
+  }
+  gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);
+  // Enable the assignment of the buffer object to the attribute variable
+  gl.enableVertexAttribArray(a_attribute);
+
+  //gl.bindBuffer(gl.ARRAY_BUFFER, null);
   return true;
 }
