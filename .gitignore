@@ -129,10 +129,14 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+Assignments/01_Intro_template.zip
+Assignments/02_Shaders_template.zip
 WebGL/01_FirstSteps.zip
 WebGL/02_Primitives.zip
 WebGL/03_Transformations.zip
 WebGL/04_Color.zip
 WebGL/05_Textures.zip
 WebGL/06_Projections.zip
+WebGL/07_Depth.zip
+WebGL/08_Geometry.zip
 

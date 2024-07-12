@@ -1,5 +1,3 @@
-// HelloCube_singleColor.js (c) 2012 matsuda
-// Vertex shader program
 var VSHADER_SOURCE =
   "attribute vec4 a_Position;\n" +
   "attribute vec4 a_Color;\n" +
@@ -10,7 +8,6 @@ var VSHADER_SOURCE =
   "  v_Color = a_Color;\n" +
   "}\n";
 
-// Fragment shader program
 var FSHADER_SOURCE =
   "#ifdef GL_ES\n" +
   "precision mediump float;\n" +
@@ -21,72 +18,74 @@ var FSHADER_SOURCE =
   "}\n";
 
 function main() {
-  // Retrieve <canvas> element
   var canvas = document.getElementById("webgl");
 
-  // Get the rendering context for WebGL
   var gl = getWebGLContext(canvas);
   if (!gl) {
     console.log("Failed to get the rendering context for WebGL");
     return;
   }
 
-  // Initialize shaders
   initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE);
 
-  //
   var n = initVertexBuffers(gl);
   if (n < 0) {
     console.log("Failed to initialize buffer objects");
     return;
   }
 
-  // Set clear color and enable hidden surface removal
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
 
-  // Get the storage location of u_mvpMatrix
   var u_MvpMatrix = gl.getUniformLocation(gl.program, "u_MvpMatrix");
   if (!u_MvpMatrix) {
     console.log("Failed to get the storage location of u_MvpMatrix");
     return;
   }
 
-  // Set the viewing volume
   var mvpMatrix = new Matrix4();
   mvpMatrix.setPerspective(30, 1, 1, 100);
   mvpMatrix.lookAt(3, 3, 7, 0, 0, 0, 0, 1, 0);
 
-  // Pass the model view projection matrix
   gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
 
-  // Clear color and depth buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // Draw the cube
   gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
 }
 
 function initVertexBuffers(gl) {
-  // TODO: Define white cube
-  var verticesColors = new Float32Array([]);
+  var verticesColors = new Float32Array([
+    1.0,  1.0,  1.0,  1.0,  1.0,  1.0,
+    -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,
+    -1.0, -1.0,  1.0,  1.0,  1.0,  1.0,
+     1.0, -1.0,  1.0,  1.0,  1.0,  1.0,
+     1.0, -1.0, -1.0,  1.0,  1.0,  1.0,
+     1.0,  1.0, -1.0,  1.0,  1.0,  1.0,
+    -1.0,  1.0, -1.0,  1.0,  1.0,  1.0,
+    -1.0, -1.0, -1.0,  1.0,  1.0,  1.0
+  ]);
 
-  // TODO: Prepare indices of the vertices
+  var indices = new Uint8Array([
+    0, 1, 2,   0, 2, 3,
+    0, 3, 4,   0, 4, 5,
+    0, 5, 6,   0, 6, 1,
+    1, 6, 7,   1, 7, 2,
+    7, 4, 3,   7, 3, 2,
+    4, 7, 6,   4, 6, 5
+  ]);
 
-  // Create a buffer object
   var vertexColorBuffer = gl.createBuffer();
-  // TODO: Prepare buffer for indices
-  if (!vertexColorBuffer) {
+  var indexBuffer = gl.createBuffer();
+  if (!vertexColorBuffer || !indexBuffer) {
     return -1;
   }
 
-  // Write vertex information to buffer object
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, verticesColors, gl.STATIC_DRAW);
 
   var FSIZE = verticesColors.BYTES_PER_ELEMENT;
 
-  // Assign the buffer object to a_Position variable
   var a_Position = gl.getAttribLocation(gl.program, "a_Position");
   if (a_Position < 0) {
     console.log("Failed to get the storage location of a_Position");
@@ -95,7 +94,6 @@ function initVertexBuffers(gl) {
   gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, FSIZE * 6, 0);
   gl.enableVertexAttribArray(a_Position);
 
-  // Assign the buffer object to a_Color variable
   var a_Color = gl.getAttribLocation(gl.program, "a_Color");
   if (a_Color < 0) {
     console.log("Failed to get the storage location of a_Color");
@@ -104,11 +102,10 @@ function initVertexBuffers(gl) {
   gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 6, FSIZE * 3);
   gl.enableVertexAttribArray(a_Color);
 
-  // Unbind the buffer object
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-  // TODO: Write the indices to the buffer object
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
-  // TODO: State how many vertices are now part of the geometry
-  return n;
+  return indices.length;
 }
