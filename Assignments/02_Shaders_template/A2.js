@@ -72,7 +72,7 @@ var racoonTexture = new THREE.ImageUtils.loadTexture(
 
 var lightColor = { type: "c", value: new THREE.Color(1.0, 1.0, 1.0) };
 var ambientColor = { type: "c", value: new THREE.Color(0.4, 0.4, 0.4) };
-var lightPosition = { type: "v3", value: new THREE.Vector3(0.49, 0.79, 0.49) };
+var lightPosition = { type: "v3", value: new THREE.Vector3(0.0, 0.0, 1.0) };
 
 var kAmbient = { type: "f", value: 0.4 };
 var kDiffuse = { type: "f", value: 0.8 };
